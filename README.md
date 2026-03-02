@@ -48,6 +48,19 @@ ai-rca-spring-boot/
   <artifactId>ai-rca-spring-boot-starter</artifactId>
   <version>0.0.1</version>
 </dependency>
+
+<!-- AI Model Dependency-->
+<dependency>
+  <groupId>org.springframework.ai</groupId>
+  <artifactId>spring-ai-starter-model-openai</artifactId>
+</dependency>
+
+<!-- OR -->
+
+<dependency>
+  <groupId>org.springframework.ai</groupId>
+  <artifactId>spring-ai-starter-model-anthropic</artifactId>
+</dependency>
 ```
 
 ### Gradle
@@ -196,11 +209,12 @@ mvn clean install
 ## 🧩 Usage in Another Project
 
 1. Add dependency
-2. Configure API key
-3. Enable endpoint
-4. Run application
-5. Trigger exception
-6. Visit `/actuator/ai-rca`
+2. Add Spring AI dependency for OpenAI/Anthropic
+3. Configure API key
+4. Enable endpoint
+5. Run application
+6. Trigger exception
+7. Visit `/actuator/ai-rca`
 
 No additional Java configuration required.
 
