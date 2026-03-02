@@ -3,7 +3,7 @@
          xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 https://maven.apache.org/xsd/maven-4.0.0.xsd">
     <modelVersion>4.0.0</modelVersion>
     <parent>
-        <groupId>io.jvai</groupId>
+        <groupId>io.github.prakharr0</groupId>
         <artifactId>ai-rca-spring-boot</artifactId>
         <version>0.0.1</version>
         <relativePath>../pom.xml</relativePath>
@@ -75,7 +75,7 @@
             <optional>true</optional>
         </dependency>
         <dependency>
-            <groupId>io.jvai</groupId>
+            <groupId>io.github.prakharr0</groupId>
             <artifactId>ai-rca-spring-boot-core</artifactId>
             <version>0.0.1</version>
         </dependency>

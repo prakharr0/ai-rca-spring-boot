@@ -44,7 +44,7 @@ ai-rca-spring-boot/
 ### Maven
 ```xml
 <dependency>
-  <groupId>io.jvai</groupId>
+  <groupId>io.github.prakharr0</groupId>
   <artifactId>ai-rca-spring-boot-starter</artifactId>
   <version>0.0.1</version>
 </dependency>
@@ -65,7 +65,7 @@ ai-rca-spring-boot/
 
 ### Gradle
 ```groovy
-implementation 'io.jvai:ai-rca-spring-boot-starter:0.0.1'
+implementation 'io.github.prakharr0:ai-rca-spring-boot-starter:0.0.1'
 ```
 
 ---
@@ -169,7 +169,7 @@ File `src/main/resources/logback.xml`:
 ```xml
 <configuration>
     <appender name="RING_BUFFER"
-              class="io.jvai.ai.rca.spring.boot.core.context.RingBufferLogAppender" />
+              class="context.io.github.prakharr0.ai.rca.spring.boot.core.RingBufferLogAppender" />
     <root level="INFO">
         <appender-ref ref="RING_BUFFER"/>
     </root>

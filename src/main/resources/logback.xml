@@ -1,6 +1,6 @@
 <configuration>
 
-    <appender name="RING_BUFFER" class="context.io.jvai.ai.rca.spring.boot.core.RingBufferLogAppender" />
+    <appender name="RING_BUFFER" class="context.io.github.prakharr0.ai.rca.spring.boot.core.RingBufferLogAppender" />
 
     <root level="INFO">
         <appender-ref ref="RING_BUFFER" />
