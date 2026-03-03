@@ -1,9 +1,56 @@
 package io.github.prakharr0.ai.rca.spring.boot.core.prompt;
 
+/**
+ * Container for AI system-level prompts used during root cause analysis.
+ *
+ * <p>
+ * The {@link #SYSTEM_PROMPT} defines behavioral and output constraints for
+ * the AI model performing diagnostics. It instructs the model to:
+ * <ul>
+ *     <li>Perform structured root cause analysis</li>
+ *     <li>Reason using ranked hypotheses</li>
+ *     <li>Output strictly valid JSON</li>
+ *     <li>Provide concise diagnostic reasoning</li>
+ * </ul>
+ *
+ * <h2>Design</h2>
+ * This class is final and non-instantiable. It serves only as a container
+ * for static prompt constants.
+ *
+ * <h2>Prompt Characteristics</h2>
+ * <ul>
+ *     <li>Structured diagnostic reasoning</li>
+ *     <li>JSON-only output constraint</li>
+ *     <li>Concise reasoning requirements</li>
+ *     <li>Hypothesis-driven analysis</li>
+ * </ul>
+ *
+ * <h2>Usage</h2>
+ * The prompt is typically consumed by AI clients such as Spring AI's
+ * {@code ChatClient} when constructing analysis requests.
+ */
 public final class SystemPrompts {
 
+    /**
+     * Private constructor to prevent instantiation.
+     */
     private SystemPrompts() {}
 
+    /**
+     * System-level prompt guiding AI root cause analysis behavior.
+     *
+     * <p>
+     * The prompt enforces:
+     * <ul>
+     *     <li>Structured hypothesis ranking</li>
+     *     <li>JSON-only output</li>
+     *     <li>Concise reasoning</li>
+     *     <li>Data-driven diagnostics</li>
+     * </ul>
+     *
+     * <p>
+     * Consumers must treat this string as an immutable constant.
+     */
     public static final String SYSTEM_PROMPT = """
 You are a senior JVM production debugging expert with deep experience in:
 
@@ -34,7 +81,7 @@ RESPONSE CONSTRAINTS:
 - Keep each reasoning field to 2 sentences maximum.
 - Keep each diagnosticStep to 1 sentence maximum.
 - Be concise and precise, not verbose.
-- Each "estimatedTimeToVerify" field: 3 words max (e.g. "< 5 minutes").          
+- Each "estimatedTimeToVerify" field: 3 words max (e.g. "< 5 minutes").
 
 IMPORTANT: Respond ONLY with raw JSON.
 Do NOT wrap in markdown code blocks.
