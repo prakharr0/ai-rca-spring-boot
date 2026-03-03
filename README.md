@@ -46,7 +46,7 @@ ai-rca-spring-boot/
 <dependency>
   <groupId>io.github.prakharr0</groupId>
   <artifactId>ai-rca-spring-boot-starter</artifactId>
-  <version>0.0.3</version>
+  <version>0.0.4</version>
 </dependency>
 
 <!-- AI Model Dependency-->
@@ -65,7 +65,7 @@ ai-rca-spring-boot/
 
 ### Gradle
 ```groovy
-implementation 'io.github.prakharr0:ai-rca-spring-boot-starter:0.0.3'
+implementation 'io.github.prakharr0:ai-rca-spring-boot-starter:0.0.4'
 ```
 
 ---
@@ -129,6 +129,7 @@ http://localhost:8080/actuator/ai-rca
    "b9d20b91e14037020f64324e776988aa20ae7d096e4dd02caa32e2b967a9b688": {
       "analysisConfidence": 0.95,
       "knownPattern": "Arithmetic error in business logic",
+      "exceptionMessage": "/ by zero",
       "missingInformation": [],
       "rootCauses": [
          {
