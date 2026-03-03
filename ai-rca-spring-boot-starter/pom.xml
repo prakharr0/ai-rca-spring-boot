@@ -12,19 +12,6 @@
     <artifactId>ai-rca-spring-boot-starter</artifactId>
     <name>ai-rca-spring-boot-starter</name>
     <description>ai-rca-spring-boot-starter</description>
-    <url/>
-    <licenses>
-        <license/>
-    </licenses>
-    <developers>
-        <developer/>
-    </developers>
-    <scm>
-        <connection/>
-        <developerConnection/>
-        <tag/>
-        <url/>
-    </scm>
     <dependencyManagement>
         <dependencies>
             <dependency>
