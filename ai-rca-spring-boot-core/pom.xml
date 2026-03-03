@@ -5,13 +5,35 @@
     <parent>
         <groupId>io.github.prakharr0</groupId>
         <artifactId>ai-rca-spring-boot</artifactId>
-        <version>0.0.1</version>
+        <version>0.0.2</version>
         <relativePath>../pom.xml</relativePath>
     </parent>
 
     <artifactId>ai-rca-spring-boot-core</artifactId>
     <name>ai-rca-spring-boot-core</name>
-    <description>ai-rca-spring-boot-core</description>
+    <description>AI-powered Root Cause Analysis for Spring Boot - Core Module</description>
+    <url>https://github.com/prakharr0/ai-rca-spring-boot</url>
+
+    <licenses>
+        <license>
+            <name>MIT License</name>
+            <url>https://opensource.org/licenses/MIT</url>
+        </license>
+    </licenses>
+
+    <developers>
+        <developer>
+            <id>prakharr0</id>
+            <name>Prakhar Rathi</name>
+            <email>prakhar.rthi@gmail.com</email>
+        </developer>
+    </developers>
+
+    <scm>
+        <connection>scm:git:https://github.com/prakharr0/ai-rca-spring-boot.git</connection>
+        <developerConnection>scm:git:ssh://git@github.com/prakharr0/ai-rca-spring-boot.git</developerConnection>
+        <url>https://github.com/prakharr0/ai-rca-spring-boot</url>
+    </scm>
 
     <dependencyManagement>
         <dependencies>

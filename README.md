@@ -46,7 +46,7 @@ ai-rca-spring-boot/
 <dependency>
   <groupId>io.github.prakharr0</groupId>
   <artifactId>ai-rca-spring-boot-starter</artifactId>
-  <version>0.0.1</version>
+  <version>0.0.2</version>
 </dependency>
 
 <!-- AI Model Dependency-->
@@ -65,7 +65,7 @@ ai-rca-spring-boot/
 
 ### Gradle
 ```groovy
-implementation 'io.github.prakharr0:ai-rca-spring-boot-starter:0.0.1'
+implementation 'io.github.prakharr0:ai-rca-spring-boot-starter:0.0.2'
 ```
 
 ---

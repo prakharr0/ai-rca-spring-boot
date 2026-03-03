@@ -6,7 +6,7 @@
 
     <groupId>io.github.prakharr0</groupId>
     <artifactId>ai-rca-spring-boot</artifactId>
-    <version>0.0.1</version>
+    <version>0.0.2</version>
     <packaging>pom</packaging>
 
     <modules>
@@ -14,10 +14,9 @@
         <module>ai-rca-spring-boot-starter</module>
     </modules>
 
-
     <name>AI RCA Spring Boot Starter</name>
     <description>AI-powered Root Cause Analysis for Spring Boot</description>
-    <url>https://github.com/prakharr0/ai-rca-spring-boot.git</url>
+    <url>https://github.com/prakharr0/ai-rca-spring-boot</url>
 
     <licenses>
         <license>
@@ -37,7 +36,7 @@
     <scm>
         <connection>scm:git:https://github.com/prakharr0/ai-rca-spring-boot.git</connection>
         <developerConnection>scm:git:ssh://git@github.com/prakharr0/ai-rca-spring-boot.git</developerConnection>
-        <url>https://github.com/prakharr0/ai-rca-spring-boot.git</url>
+        <url>https://github.com/prakharr0/ai-rca-spring-boot</url>
     </scm>
 
     <properties>
