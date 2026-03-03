@@ -52,8 +52,21 @@ public class UserPromptBuilder {
             Respond with this exact JSON structure:
             {
               "analysisConfidence": <0.0-1.0>,
-              "missingInformation": ["<string>"],
-              "knownPattern": "<string or null>",
+              "missingInformation": ["<Only include if analysisConfidence < 0.6.
+                                 List specific runtime artifacts that were absent and would
+                                 materially improve diagnosis accuracy, e.g.
+                                 'Full stack trace beyond trimmed frames',
+                                 'spring.datasource.url property value',
+                                 'Heap dump at time of failure',
+                                 'Active Spring beans list'.
+                                 Do NOT list generic items like 'more logs' or 'more context'.
+                                 Empty array if confidence >= 0.6 or all necessary context was available.>"],
+              "knownPattern": "<A well-known Spring Boot or Spring ecosystem misconfiguration pattern name,
+                                   e.g. 'Circular bean dependency', 'Missing DataSource configuration', 'Missing bean definition'.
+                                   If the failure is generic application logic unrelated to Spring, return a short label describing
+                                   the general failure class instead, e.g. 'Arithmetic error in business logic',
+                                   'Null pointer in service layer', 'Array index out of bounds'.
+                                   Never return null. Always return a string.>"
               "rootCauses": [
                 {
                   "rank": <int>,
@@ -157,8 +170,10 @@ Provide:
     - Overall confidence score between 0.0 and 1.0
     - If confidence < 0.6, list missing information that would increase certainty.
     
-Identify if the failure pattern matches any common known Spring Boot misconfiguration patterns.
-                 If yes, label it explicitly.
+Identify if the failure matches a known Spring Boot misconfiguration pattern.\s
+If yes, label it explicitly (e.g. "Missing DataSource configuration").
+If no, classify it as a general failure pattern (e.g. "Arithmetic error in business logic").
+Never leave this field null.
 
 IMPORTANT:
 Do NOT suggest fixes.

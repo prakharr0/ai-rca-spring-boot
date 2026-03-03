@@ -1,5 +1,6 @@
 package io.github.prakharr0.ai.rca.spring.boot.core.analysis.impl;
 
+import io.github.prakharr0.ai.rca.spring.boot.core.model.AiRcaResponse;
 import lombok.RequiredArgsConstructor;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -96,7 +97,7 @@ public class DefaultAiRcaAnalyzer implements AiRcaAnalyzer {
      * Key: Exception fingerprint
      * Value: AI-generated RCA response (Markdown stripped)
      */
-    private final Map<String, String> cache = new ConcurrentHashMap<>();
+    private final Map<String, AiRcaResponse> cache = new ConcurrentHashMap<>();
 
     /**
      * Performs asynchronous AI-based root cause analysis for a given {@link Throwable}.
@@ -128,28 +129,34 @@ public class DefaultAiRcaAnalyzer implements AiRcaAnalyzer {
         ContextSnapshot snapshot = collector.collect(throwable);
         String fingerprint = ExceptionFingerprint.generate(snapshot);
 
-        String response;
+        AiRcaResponse response;
         if (cache.containsKey(fingerprint)) {
             response = cache.get(fingerprint);
         } else {
-            response = chatClient.prompt()
+            String aiResponse = chatClient.prompt()
                     .system(SystemPrompts.SYSTEM_PROMPT)
                     .user(UserPromptBuilder.build(snapshot))
                     .call()
                     .content();
 
-            response = stripMarkdown(response);
+            if (aiResponse == null) {
+                log.warn("AI Analysis Failed for {}", throwable.getMessage(), throwable.getCause());
+                return;
+            }
+
+            aiResponse = stripMarkdown(aiResponse);
+
+            try {
+                response = objectMapper.readValue(aiResponse, AiRcaResponse.class);
+            } catch (Exception e) {
+                log.warn("[AI-RCA-SPRING-BOOT-STARTER] Analysis results for: {}\n{}", throwable.getLocalizedMessage(), aiResponse);
+                return;
+            }
         }
 
-        if (response == null) {
-            log.warn("AI Analysis Failed for {}", throwable.getMessage(), throwable.getCause());
-            return;
-        }
-
-        final String finalResponse = response;
-        cache.computeIfAbsent(fingerprint, k ->  cache.put(fingerprint, finalResponse));
-
-        log.warn("[AI-RCA-SPRING-BOOT-STARTER] Analysis results for: {}\n{}", throwable.getLocalizedMessage(), response);
+        cache.computeIfAbsent(fingerprint, k ->  response);
+        log.warn("[AI-RCA-SPRING-BOOT-STARTER] Analysis results for: {}\n{}", throwable.getLocalizedMessage(),
+                objectMapper.writerWithDefaultPrettyPrinter().writeValueAsString(response));
     }
 
     /**
@@ -161,7 +168,7 @@ public class DefaultAiRcaAnalyzer implements AiRcaAnalyzer {
      *
      * @return a thread-safe map of exception fingerprint to AI response
      */
-    public Map<String, String> getResults() {
+    public Map<String, AiRcaResponse> getResults() {
         return cache;
     }
 
