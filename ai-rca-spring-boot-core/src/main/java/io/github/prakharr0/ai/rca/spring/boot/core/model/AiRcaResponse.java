@@ -15,6 +15,7 @@ import java.util.List;
  * @param knownPattern        A named pattern the AI matched this exception against, if any.
  *                            Example: {@code "Spring DataSource misconfiguration"}.
  *                            {@code null} or empty if no known pattern was matched.
+ * @param exceptionMessage    The exception message being analyzed
  * @param missingInformation  A list of context items that were absent but would have
  *                            improved the accuracy of the analysis (e.g., logs, env vars).
  *                            Empty if all necessary context was available.
@@ -26,6 +27,7 @@ import java.util.List;
 public record AiRcaResponse(
         double analysisConfidence,
         String knownPattern,
+        String exceptionMessage,
         List<String> missingInformation,
         List<RootCause> rootCauses
 ) {}

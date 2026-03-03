@@ -52,6 +52,7 @@ public class UserPromptBuilder {
             Respond with this exact JSON structure:
             {
               "analysisConfidence": <0.0-1.0>,
+              "exceptionMessage": <String of the exception message being analyzed>"
               "missingInformation": ["<Only include if analysisConfidence < 0.6.
                                  List specific runtime artifacts that were absent and would
                                  materially improve diagnosis accuracy, e.g.
