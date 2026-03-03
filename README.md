@@ -46,7 +46,7 @@ ai-rca-spring-boot/
 <dependency>
   <groupId>io.github.prakharr0</groupId>
   <artifactId>ai-rca-spring-boot-starter</artifactId>
-  <version>0.0.2</version>
+  <version>0.0.3</version>
 </dependency>
 
 <!-- AI Model Dependency-->
@@ -65,7 +65,7 @@ ai-rca-spring-boot/
 
 ### Gradle
 ```groovy
-implementation 'io.github.prakharr0:ai-rca-spring-boot-starter:0.0.2'
+implementation 'io.github.prakharr0:ai-rca-spring-boot-starter:0.0.3'
 ```
 
 ---
@@ -126,18 +126,40 @@ http://localhost:8080/actuator/ai-rca
 ## 🧠 Example Output
 ```json
 {
-  "rootCauses": [
-    {
-      "title": "Missing datasource configuration",
-      "likelihood": "High",
-      "category": "Configuration",
-      "reasoning": "Spring Boot failed to create DataSource bean...",
-      "diagnosticStep": "Check spring.datasource properties",
-      "estimatedVerificationTime": "5 minutes"
-    }
-  ],
-  "confidence": 0.82,
-  "missingInformation": []
+   "b9d20b91e14037020f64324e776988aa20ae7d096e4dd02caa32e2b967a9b688": {
+      "analysisConfidence": 0.95,
+      "knownPattern": "Arithmetic error in business logic",
+      "missingInformation": [],
+      "rootCauses": [
+         {
+            "rank": 1,
+            "title": "Hardcoded or unguarded division by zero in controller method",
+            "likelihood": "High",
+            "category": "Code",
+            "reasoning": "The stack trace pinpoints the exception directly at ExceptionThrowingController.java:11 inside throwEx(), indicating an integer division operation with a zero divisor at that exact line. No intermediate service or repository layer is involved, confirming the fault is isolated to controller logic.",
+            "diagnosticStep": "Inspect line 11 of ExceptionThrowingController.java to identify the division expression and trace the source of the zero-valued denominator.",
+            "estimatedTimeToVerify": "< 2 minutes"
+         },
+         {
+            "rank": 2,
+            "title": "Zero-valued input parameter passed to division operation",
+            "likelihood": "Medium",
+            "category": "Code",
+            "reasoning": "The controller method throwEx() may accept a request parameter used as a divisor without null or zero validation, allowing a caller to trigger the exception by passing zero. This is consistent with the exception originating at the controller entry point with no upstream processing.",
+            "diagnosticStep": "Check the method signature of throwEx() for request parameters and verify whether zero-value input validation is absent.",
+            "estimatedTimeToVerify": "< 5 minutes"
+         },
+         {
+            "rank": 3,
+            "title": "Intentional exception-throwing endpoint for testing error handling",
+            "likelihood": "Low",
+            "category": "Code",
+            "reasoning": "The controller is named ExceptionThrowingController, strongly suggesting it may be a test or demo endpoint deliberately coded to throw an ArithmeticException. If intentional, this is not a production defect but a test artifact deployed to a non-test environment.",
+            "diagnosticStep": "Review the class-level intent and any @RequestMapping annotations on ExceptionThrowingController to determine if it is a deliberate fault-injection endpoint.",
+            "estimatedTimeToVerify": "< 2 minutes"
+         }
+      ]
+   }
 }
 ```
 
