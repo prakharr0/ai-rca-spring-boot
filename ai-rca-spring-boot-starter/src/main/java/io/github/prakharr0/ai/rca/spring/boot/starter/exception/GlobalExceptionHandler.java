@@ -5,6 +5,15 @@ import org.slf4j.LoggerFactory;
 import org.springframework.web.bind.annotation.ControllerAdvice;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import io.github.prakharr0.ai.rca.spring.boot.core.analysis.AiRcaAnalyzer;
+import io.github.prakharr0.ai.rca.spring.boot.core.context.ContextCollector;
+import io.github.prakharr0.ai.rca.spring.boot.core.context.ContextSnapshot;
+import io.github.prakharr0.ai.rca.spring.boot.core.context.ExceptionFingerprint;
+import io.github.prakharr0.ai.rca.spring.boot.core.store.ExceptionOccurrence;
+import io.github.prakharr0.ai.rca.spring.boot.core.store.ExceptionTimelineStore;
+import org.springframework.web.context.request.WebRequest;
+
+import java.time.Instant;
+import java.util.UUID;
 
 /**
  * Global exception handler that integrates AI-based root cause analysis
@@ -48,14 +57,18 @@ public class GlobalExceptionHandler {
      * AI analyzer used to perform root cause analysis.
      */
     private final AiRcaAnalyzer analyzer;
+    private final ContextCollector collector;
+    private final ExceptionTimelineStore timelineStore;
 
     /**
      * Creates a new global exception handler.
      *
      * @param analyzer AI root cause analyzer
      */
-    public GlobalExceptionHandler(AiRcaAnalyzer analyzer) {
+    public GlobalExceptionHandler(AiRcaAnalyzer analyzer, ContextCollector collector, ExceptionTimelineStore timelineStore) {
         this.analyzer = analyzer;
+        this.collector = collector;
+        this.timelineStore = timelineStore;
     }
 
     /**
@@ -73,8 +86,24 @@ public class GlobalExceptionHandler {
      * @throws Exception rethrows the original exception
      */
     @ExceptionHandler(Exception.class)
-    public void handle(Exception ex) throws Exception {
+    public void handle(Exception ex, WebRequest request) throws Exception {
         log.info("[AI-RCA-SPRING-BOOT-STARTER] Analysis starting for: {}", ex.getLocalizedMessage());
+        ContextSnapshot snapshot = collector.collect(ex);
+        String fingerprint = ExceptionFingerprint.generate(snapshot);
+
+        ExceptionOccurrence occurrence = new ExceptionOccurrence(
+                UUID.randomUUID().toString(),
+                Instant.now(),
+                snapshot.exceptionType(),
+                snapshot.rootCauseType(),
+                snapshot.rootCauseMessage(),
+                fingerprint,
+                "N/A",
+                request == null ? "N/A" : request.getDescription(false),
+                Thread.currentThread().getName()
+        );
+
+        timelineStore.add(occurrence);
         analyzer.analyze(ex);
         throw ex;
     }

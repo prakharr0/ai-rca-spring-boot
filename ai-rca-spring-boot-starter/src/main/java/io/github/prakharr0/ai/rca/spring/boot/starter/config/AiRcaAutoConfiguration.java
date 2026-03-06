@@ -6,10 +6,14 @@ import org.springframework.boot.autoconfigure.condition.*;
 import org.springframework.boot.context.properties.EnableConfigurationProperties;
 import org.springframework.context.annotation.Bean;
 import org.springframework.scheduling.annotation.EnableAsync;
+import io.github.prakharr0.ai.rca.spring.boot.core.chat.RcaChatService;
 import io.github.prakharr0.ai.rca.spring.boot.core.analysis.AiRcaAnalyzer;
 import io.github.prakharr0.ai.rca.spring.boot.core.analysis.impl.DefaultAiRcaAnalyzer;
 import io.github.prakharr0.ai.rca.spring.boot.core.context.ContextCollector;
+import io.github.prakharr0.ai.rca.spring.boot.core.store.ExceptionTimelineStore;
 import io.github.prakharr0.ai.rca.spring.boot.starter.exception.GlobalExceptionHandler;
+import io.github.prakharr0.ai.rca.spring.boot.starter.web.AiRcaChatController;
+import io.github.prakharr0.ai.rca.spring.boot.starter.web.AiRcaEventsController;
 import tools.jackson.databind.ObjectMapper;
 
 /**
@@ -85,11 +89,17 @@ public class AiRcaAutoConfiguration {
      */
     @Bean
     @ConditionalOnMissingBean
-    public DefaultAiRcaAnalyzer aiRcaAnalyzer(ChatClient.Builder builder, ContextCollector collector, ObjectMapper objectMapper) {
+    public DefaultAiRcaAnalyzer aiRcaAnalyzer(
+            ChatClient.Builder builder,
+            ContextCollector collector,
+            ObjectMapper objectMapper,
+            ExceptionTimelineStore timelineStore
+    ) {
         return new DefaultAiRcaAnalyzer(
                 builder.build(),
                 collector,
-                objectMapper
+                objectMapper,
+                timelineStore
         );
     }
 
@@ -111,8 +121,10 @@ public class AiRcaAutoConfiguration {
             matchIfMissing = true
     )
     public GlobalExceptionHandler globalExceptionHandler(
-            AiRcaAnalyzer analyzer) {
-        return new GlobalExceptionHandler(analyzer);
+            AiRcaAnalyzer analyzer,
+            ContextCollector collector,
+            ExceptionTimelineStore timelineStore) {
+        return new GlobalExceptionHandler(analyzer, collector, timelineStore);
     }
 
     /**
@@ -129,5 +141,45 @@ public class AiRcaAutoConfiguration {
     public AiRcaEndpoint aiRcaEndpoint(
             DefaultAiRcaAnalyzer analyzer) {
         return new AiRcaEndpoint(analyzer);
+    }
+
+    @Bean
+    @ConditionalOnMissingBean
+    public ExceptionTimelineStore timelineStore(AiRcaProperties properties) {
+        return new ExceptionTimelineStore(properties.getHistorySize());
+    }
+
+    @Bean
+    @ConditionalOnWebApplication(type = ConditionalOnWebApplication.Type.SERVLET)
+    @ConditionalOnMissingBean
+    public AiRcaEventsController aiRcaEventsController(ExceptionTimelineStore timelineStore) {
+        return new AiRcaEventsController(timelineStore);
+    }
+
+    @Bean
+    @ConditionalOnProperty(prefix = "ai.rca", name = "chat-enabled", havingValue = "true", matchIfMissing = true)
+    @ConditionalOnWebApplication(type = ConditionalOnWebApplication.Type.SERVLET)
+    @ConditionalOnMissingBean
+    public RcaChatService rcaChatService(
+            ChatClient.Builder builder,
+            ExceptionTimelineStore timelineStore,
+            ObjectMapper objectMapper,
+            AiRcaProperties properties
+    ) {
+        return new RcaChatService(
+                builder.build(),
+                timelineStore,
+                objectMapper,
+                properties.getDefaultTimeToleranceSeconds(),
+                properties.getChatContextEvents()
+        );
+    }
+
+    @Bean
+    @ConditionalOnProperty(prefix = "ai.rca", name = "chat-enabled", havingValue = "true", matchIfMissing = true)
+    @ConditionalOnWebApplication(type = ConditionalOnWebApplication.Type.SERVLET)
+    @ConditionalOnMissingBean
+    public AiRcaChatController aiRcaChatController(RcaChatService service, AiRcaProperties properties) {
+        return new AiRcaChatController(service, properties.isChatUiEnabled());
     }
 }

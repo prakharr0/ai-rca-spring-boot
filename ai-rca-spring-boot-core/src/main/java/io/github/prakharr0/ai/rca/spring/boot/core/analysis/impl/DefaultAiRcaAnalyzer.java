@@ -1,6 +1,7 @@
 package io.github.prakharr0.ai.rca.spring.boot.core.analysis.impl;
 
 import io.github.prakharr0.ai.rca.spring.boot.core.model.AiRcaResponse;
+import io.github.prakharr0.ai.rca.spring.boot.core.store.ExceptionTimelineStore;
 import lombok.RequiredArgsConstructor;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -90,6 +91,7 @@ public class DefaultAiRcaAnalyzer implements AiRcaAnalyzer {
      * (Reserved for structured output handling or future enhancements.)
      */
     private final ObjectMapper objectMapper;
+    private final ExceptionTimelineStore timelineStore;
 
     /**
      * In-memory cache storing AI responses keyed by exception fingerprint.
@@ -141,6 +143,7 @@ public class DefaultAiRcaAnalyzer implements AiRcaAnalyzer {
 
             if (aiResponse == null) {
                 log.warn("AI Analysis Failed for {}", throwable.getMessage(), throwable.getCause());
+                timelineStore.markFailureByFingerprint(fingerprint, "AI response was empty");
                 return;
             }
 
@@ -150,11 +153,13 @@ public class DefaultAiRcaAnalyzer implements AiRcaAnalyzer {
                 response = objectMapper.readValue(aiResponse, AiRcaResponse.class);
             } catch (Exception e) {
                 log.warn("[AI-RCA-SPRING-BOOT-STARTER] Analysis results for: {}\n{}", throwable.getLocalizedMessage(), aiResponse);
+                timelineStore.markFailureByFingerprint(fingerprint, "AI response could not be parsed");
                 return;
             }
         }
 
         cache.computeIfAbsent(fingerprint, k ->  response);
+        timelineStore.attachAnalysisByFingerprint(fingerprint, response);
         log.warn("[AI-RCA-SPRING-BOOT-STARTER] Analysis results for: {}\n{}", throwable.getLocalizedMessage(),
                 objectMapper.writerWithDefaultPrettyPrinter().writeValueAsString(response));
     }

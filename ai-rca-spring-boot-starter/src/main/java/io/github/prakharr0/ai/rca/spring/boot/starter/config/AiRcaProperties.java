@@ -40,4 +40,29 @@ public class AiRcaProperties {
      * not be invoked.
      */
     private boolean enabled = true;
+
+    /**
+     * Maximum in-memory exception events retained in the timeline.
+     */
+    private int historySize = 500;
+
+    /**
+     * Enables chat endpoint API.
+     */
+    private boolean chatEnabled = true;
+
+    /**
+     * Enables lightweight chat UI page.
+     */
+    private boolean chatUiEnabled = true;
+
+    /**
+     * Default tolerance in seconds when resolving natural language event times.
+     */
+    private int defaultTimeToleranceSeconds = 1800;
+
+    /**
+     * Number of most recent events to provide as context in generic chat questions.
+     */
+    private int chatContextEvents = 20;
 }
