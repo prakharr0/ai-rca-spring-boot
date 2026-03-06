@@ -28,6 +28,11 @@ public class RcaChatService {
             If data is insufficient, explicitly say what is missing.
             When asked "why" for an event, summarize the ranked root causes and confidence.
             Keep the answer concise and factual.
+            Formatting rules:
+            - Do not use markdown tables.
+            - Do not use pipe-separated output.
+            - Use short section headings where useful.
+            - Put each key point on a new line.
             """;
 
     private final ChatClient chatClient;
@@ -98,6 +103,7 @@ public class RcaChatService {
         if (response == null || response.isBlank()) {
             response = "No response was generated for this question.";
         }
+        response = normalizeFormatting(response);
 
         List<String> referencedIds = new ArrayList<>();
         for (ExceptionOccurrence occurrence : context) {
@@ -105,6 +111,56 @@ public class RcaChatService {
         }
 
         return new ChatAnswer(response.trim(), referencedIds, resolvedTime);
+    }
+
+    private String normalizeFormatting(String response) {
+        String[] lines = response.split("\\R");
+        StringBuilder normalized = new StringBuilder();
+
+        for (String rawLine : lines) {
+            String line = rawLine.trim();
+            if (line.isBlank()) {
+                normalized.append('\n');
+                continue;
+            }
+
+            if (isTableSeparator(line)) {
+                continue;
+            }
+
+            if (line.startsWith("|") && line.endsWith("|")) {
+                String converted = convertTableLineToText(line);
+                if (!converted.isBlank()) {
+                    normalized.append(converted).append('\n');
+                }
+                continue;
+            }
+
+            normalized.append(rawLine).append('\n');
+        }
+
+        return normalized.toString().replaceAll("\\n{3,}", "\n\n").trim();
+    }
+
+    private boolean isTableSeparator(String line) {
+        return line.matches("^\\|?[\\s:-]+(\\|[\\s:-]+)+\\|?$");
+    }
+
+    private String convertTableLineToText(String line) {
+        String content = line.substring(1, line.length() - 1).trim();
+        if (content.isBlank()) {
+            return "";
+        }
+
+        String[] cells = content.split("\\|");
+        List<String> values = new ArrayList<>();
+        for (String cell : cells) {
+            String value = cell.trim();
+            if (!value.isBlank()) {
+                values.add(value);
+            }
+        }
+        return String.join(" - ", values);
     }
 
     private Optional<Instant> resolveTimeFromQuestion(String question, ZoneId zoneId) {
