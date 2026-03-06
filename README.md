@@ -14,6 +14,10 @@ Automatically analyzes exceptions using AI and returns structured, ranked root c
 - Diagnostic isolation steps
 - Spring Boot auto-configuration
 - Actuator endpoint integration
+- Exception timeline with timestamps
+- Time-based RCA querying
+- Chat endpoint for RCA Q&A
+- Built-in lightweight chat UI
 - Zero required Java configuration
 
 ---
@@ -46,7 +50,7 @@ ai-rca-spring-boot/
 <dependency>
   <groupId>io.github.prakharr0</groupId>
   <artifactId>ai-rca-spring-boot-starter</artifactId>
-  <version>0.0.4</version>
+  <version>0.0.5</version>
 </dependency>
 
 <!-- AI Model Dependency-->
@@ -65,7 +69,7 @@ ai-rca-spring-boot/
 
 ### Gradle
 ```groovy
-implementation 'io.github.prakharr0:ai-rca-spring-boot-starter:0.0.4'
+implementation 'io.github.prakharr0:ai-rca-spring-boot-starter:0.0.5'
 ```
 
 ---
@@ -102,6 +106,11 @@ spring:
 ai:
   rca:
     enabled: true
+    history-size: 500
+    chat-enabled: true
+    chat-ui-enabled: true
+    default-time-tolerance-seconds: 1800
+    chat-context-events: 20
 ```
 
 ### 3️⃣ Expose Actuator Endpoint
@@ -119,6 +128,36 @@ management:
 Access:
 ```
 http://localhost:8080/actuator/ai-rca
+```
+
+### 4️⃣ Query Exception Timeline
+
+Get recent or ranged exception events:
+```
+GET /ai-rca/events?limit=50
+GET /ai-rca/events?from=2026-02-05T14:00:00&to=2026-02-05T16:00:00
+```
+
+Find nearest event to a specific time:
+```
+GET /ai-rca/events/at?time=3 PM on 05 Feb 2026&toleranceSeconds=1800
+```
+
+### 5️⃣ RCA Chat API
+
+Ask questions about timeline + AI RCA results:
+```http
+POST /ai-rca/chat
+Content-Type: application/json
+
+{
+  "question": "An exception occurred at 3 pm on 05 feb 2026. Why did it happen?"
+}
+```
+
+Open lightweight UI:
+```
+GET /ai-rca/chat/ui
 ```
 
 ---
@@ -182,7 +221,8 @@ When an exception occurs:
     - Deployment metadata
 3. Structured AI prompt is generated
 4. AI returns ranked hypotheses
-5. Result is cached and exposed via Actuator
+5. Result is cached and attached to matching timeline events
+6. Timeline + chat endpoints allow RCA exploration by time and questions
 
 ---
 
@@ -237,7 +277,7 @@ mvn clean install
 4. Enable endpoint
 5. Run application
 6. Trigger exception
-7. Visit `/actuator/ai-rca`
+7. Visit `/actuator/ai-rca`, `/ai-rca/events`, or `/ai-rca/chat/ui`
 
 No additional Java configuration required.
 
