@@ -122,7 +122,7 @@ management:
         include:
           - health
           - info
-          - ai/rca
+          - rca
 ```
 
 Access:
