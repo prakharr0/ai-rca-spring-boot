@@ -18,7 +18,7 @@ import java.util.List;
 import java.util.Map;
 
 @RestController
-@RequestMapping("/ai-rca")
+@RequestMapping("/ai/rca")
 public class AiRcaEventsController {
 
     private final ExceptionTimelineStore timelineStore;
@@ -29,9 +29,9 @@ public class AiRcaEventsController {
 
     @GetMapping("/events")
     public List<ExceptionOccurrence> events(
-            @RequestParam(required = false) String from,
-            @RequestParam(required = false) String to,
-            @RequestParam(defaultValue = "50") int limit
+            @RequestParam(name = "from", required = false) String from,
+            @RequestParam(name = "to", required = false) String to,
+            @RequestParam(name = "limit", defaultValue = "50") int limit
     ) {
         ZoneId zoneId = ZoneId.systemDefault();
         Instant fromInstant = parseOrNull(from, zoneId, "from");
