@@ -16,7 +16,7 @@ import java.util.Map;
  *
  * <h2>Actuator Endpoint</h2>
  * <ul>
- *     <li>Endpoint ID: {@code ai-rca}</li>
+ *     <li>Endpoint ID: {@code rca}</li>
  *     <li>Type: Read-only</li>
  *     <li>Visibility: Actuator management interface</li>
  * </ul>
@@ -28,7 +28,7 @@ import java.util.Map;
  * @see Endpoint
  */
 @Component
-@Endpoint(id = "ai-rca")
+@Endpoint(id = "rca")
 public class AiRcaEndpoint {
 
     /**

@@ -13,7 +13,7 @@ import java.time.ZoneId;
 import java.util.List;
 
 @RestController
-@RequestMapping("/ai-rca/chat")
+@RequestMapping("/ai/rca/chat")
 public class AiRcaChatController {
 
     private final RcaChatService chatService;
@@ -335,10 +335,10 @@ public class AiRcaChatController {
                     <button class="eg-btn" data-q="What is the root cause of the most recent failure?">Root cause of the most recent failure?</button>
                     <button class="eg-btn" data-q="How many exceptions happened in the past 24 hours?">How many exceptions in the past 24 hours?</button>
                     <div class="sl">API Endpoints</div>
-                    <a class="ep-link" href="/ai-rca/events" target="_blank"><span class="ep-badge get">GET</span>/ai-rca/events</a>
-                    <a class="ep-link" href="/ai-rca/events/at" target="_blank"><span class="ep-badge get">GET</span>/ai-rca/events/at</a>
-                    <a class="ep-link" href="/actuator/ai-rca" target="_blank"><span class="ep-badge get">GET</span>/actuator/ai-rca</a>
-                    <div class="ep-plain"><span class="ep-badge post">POST</span>/ai-rca/chat</div>
+                    <a class="ep-link" href="/ai/rca/events" target="_blank"><span class="ep-badge get">GET</span>/ai/rca/events</a>
+                    <a class="ep-link" href="/ai/rca/events/at" target="_blank"><span class="ep-badge get">GET</span>/ai/rca/events/at</a>
+                    <a class="ep-link" href="/actuator/ai/rca" target="_blank"><span class="ep-badge get">GET</span>/actuator/ai/rca</a>
+                    <div class="ep-plain"><span class="ep-badge post">POST</span>/ai/rca/chat</div>
                     <div class="sl">Settings</div>
                     <div class="sett">
                       <label for="tol">Time tolerance (seconds)</label>
@@ -346,7 +346,7 @@ public class AiRcaChatController {
                     </div>
                     <div class="sb-foot">
                       <div>ai-rca-spring-boot</div>
-                      <div style="color:var(--accent)">v0.0.5</div>
+                      <div style="color:var(--accent)">v0.0.6</div>
                       <div style="margin-top:5px;font-size:10px;line-height:1.8">
                         &#9166; Enter &mdash; send<br>
                         &#8679; Shift+Enter &mdash; new line
@@ -484,7 +484,7 @@ public class AiRcaChatController {
 
                       const tol = parseInt(document.getElementById('tol').value) || 1800;
                       try {
-                        const res = await fetch('/ai-rca/chat', {
+                        const res = await fetch('/ai/rca/chat', {
                           method: 'POST',
                           headers: { 'Content-Type': 'application/json' },
                           body: JSON.stringify({ question: q, toleranceSeconds: tol })

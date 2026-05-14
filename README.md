@@ -50,7 +50,7 @@ ai-rca-spring-boot/
 <dependency>
   <groupId>io.github.prakharr0</groupId>
   <artifactId>ai-rca-spring-boot-starter</artifactId>
-  <version>0.0.5</version>
+  <version>0.0.6</version>
 </dependency>
 
 <!-- AI Model Dependency-->
@@ -69,7 +69,7 @@ ai-rca-spring-boot/
 
 ### Gradle
 ```groovy
-implementation 'io.github.prakharr0:ai-rca-spring-boot-starter:0.0.5'
+implementation 'io.github.prakharr0:ai-rca-spring-boot-starter:0.0.6'
 ```
 
 ---
@@ -122,32 +122,32 @@ management:
         include:
           - health
           - info
-          - ai-rca
+          - ai/rca
 ```
 
 Access:
 ```
-http://localhost:8080/actuator/ai-rca
+http://localhost:8080/actuator/rca
 ```
 
 ### 4️⃣ Query Exception Timeline
 
 Get recent or ranged exception events:
 ```
-GET /ai-rca/events?limit=50
-GET /ai-rca/events?from=2026-02-05T14:00:00&to=2026-02-05T16:00:00
+GET /ai/rca/events?limit=50
+GET /ai/rca/events?from=2026-02-05T14:00:00&to=2026-02-05T16:00:00
 ```
 
 Find nearest event to a specific time:
 ```
-GET /ai-rca/events/at?time=3 PM on 05 Feb 2026&toleranceSeconds=1800
+GET /ai/rca/events/at?time=3 PM on 05 Feb 2026&toleranceSeconds=1800
 ```
 
 ### 5️⃣ RCA Chat API
 
 Ask questions about timeline + AI RCA results:
 ```http
-POST /ai-rca/chat
+POST /ai/rca/chat
 Content-Type: application/json
 
 {
@@ -157,7 +157,7 @@ Content-Type: application/json
 
 Open lightweight UI:
 ```
-GET /ai-rca/chat/ui
+GET /ai/rca/chat/ui
 ```
 
 ---
@@ -277,7 +277,7 @@ mvn clean install
 4. Enable endpoint
 5. Run application
 6. Trigger exception
-7. Visit `/actuator/ai-rca`, `/ai-rca/events`, or `/ai-rca/chat/ui`
+7. Visit `/actuator/rca`, `/ai/rca/events`, or `/ai/rca/chat/ui`
 
 No additional Java configuration required.
 
