@@ -108,9 +108,7 @@ public class UserPromptBuilder {
         return """
 You are given structured production failure data.
 
-===============================
-EXCEPTION SUMMARY
-===============================
+<EXCEPTION_SUMMARY>
 
 Exception Type: 
 %s
@@ -121,19 +119,18 @@ Root Cause Type:
 Root Cause Message: 
 %s
 
-===============================
-STACK TRACE (trimmed to relevant frames)
-===============================
+</EXCEPTION_SUMMARY>
+
+<STACK_TRACE>
 %s
 
-===============================
-RECENT LOG CONTEXT (last 50 lines before failure)
-===============================
+</STACK_TRACE>
+
+<LOG_CONTEXT>
 %s
+</LOG_CONTEXT>
       
-===============================
-APPLICATION CONTEXT
-===============================  
+<APPLICATION_CONTEXT>
 Spring Boot Version: %s
 Java Version: %s
 Active Profiles: %s
@@ -142,13 +139,14 @@ Deployment Environment: %s
 Database: %s
 Web Stack: %s
 Build Tool: %s
+</APPLICATION_CONTEXT>
 
+<TASK>
+Perform structured root cause analysis of a Java production failure.
+</TASK>
 
-===============================
-TASK
-===============================
-
-Perform structured root cause analysis.
+<INSTRUCTIONS>
+Think step by step before assigning likelihood.
 
 PHASE 1:
 List the TOP 3 most probable root causes ranked by likelihood.
@@ -180,9 +178,12 @@ IMPORTANT:
 Do NOT suggest fixes.
 Do NOT give code changes.
 Focus only on ranked root causes and diagnostics.
+</INSTRUCTIONS>
 
+<OUTPUT_FORMAT>
 Output strictly valid JSON using the schema below.
 %s
+</OUTPUT_FORMAT>
 """.formatted(
                 c.exceptionType(),
                 c.rootCauseType(),
