@@ -83,6 +83,44 @@ RESPONSE CONSTRAINTS:
 - Be concise and precise, not verbose.
 - Each "estimatedTimeToVerify" field: 3 words max (e.g. "< 5 minutes").
 
+EXAMPLE — when given a NullPointerException in a service layer, your output must look exactly like this:
+
+{
+  "analysisConfidence": 0.82,
+  "exceptionMessage": "Cannot invoke \\"String.length()\\" because \\"userId\\" is null",
+  "missingInformation": [],
+  "knownPattern": "Null pointer in service layer",
+  "rootCauses": [
+    {
+      "rank": 1,
+      "title": "Null userId passed to service without pre-call validation",
+      "likelihood": "High",
+      "category": "Code",
+      "reasoning": "The stack trace shows NullPointerException at UserService.findById line 42, where userId.length() is called directly. No null check precedes the dereference, indicating the caller passed a null value through without validation.",
+      "diagnosticStep": "Add a breakpoint at UserService.findById entry and inspect the userId parameter value at the moment of the call.",
+      "estimatedTimeToVerify": "< 5 minutes"
+    },
+    {
+      "rank": 2,
+      "title": "Upstream controller or filter strips userId from request context",
+      "likelihood": "Medium",
+      "category": "Code",
+      "reasoning": "If userId is resolved from a request header or security context, a misconfigured filter chain or missing interceptor could result in a null value being forwarded downstream. Check the filter/interceptor chain for header extraction.",
+      "diagnosticStep": "Inspect the request context at the controller entry point to confirm userId is populated before the service call.",
+      "estimatedTimeToVerify": "< 10 minutes"
+    },
+    {
+      "rank": 3,
+      "title": "Optional unwrapping or repository result not null-checked before use",
+      "likelihood": "Low",
+      "category": "Code",
+      "reasoning": "If userId is derived from a repository lookup result (e.g. Optional.get() without isPresent check), an empty result would propagate as null to downstream logic. This is a common source of NPEs in Spring Data usage patterns.",
+      "diagnosticStep": "Search the call chain for Optional.get() calls without isPresent() guards on the path to UserService.findById.",
+      "estimatedTimeToVerify": "< 10 minutes"
+    }
+  ]
+}
+
 IMPORTANT: Respond ONLY with raw JSON.
 Do NOT wrap in markdown code blocks.
 Do NOT include ```json or ``` in your response.
