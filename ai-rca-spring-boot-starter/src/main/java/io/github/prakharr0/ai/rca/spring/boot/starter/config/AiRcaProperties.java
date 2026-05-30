@@ -92,6 +92,8 @@ public class AiRcaProperties {
      * causing parse failures.
      *
      * <p>When set, this value is passed per-call and takes precedence over the provider setting.
+     * When not set, the library applies a default of 4096 — 5× the typical RCA response size,
+     * chosen as a safety ceiling against mid-JSON truncation on verbose outputs.
      */
     private Integer maxTokens = null;
 }
