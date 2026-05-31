@@ -11,7 +11,10 @@ import io.github.prakharr0.ai.rca.spring.boot.core.context.ExceptionFingerprint;
 import io.github.prakharr0.ai.rca.spring.boot.core.store.ExceptionOccurrence;
 import io.github.prakharr0.ai.rca.spring.boot.core.store.ExceptionTimelineStore;
 import org.springframework.web.context.request.WebRequest;
+import tools.jackson.databind.ObjectMapper;
 
+import java.io.ByteArrayOutputStream;
+import java.io.ObjectOutputStream;
 import java.time.Instant;
 import java.util.UUID;
 
@@ -104,6 +107,16 @@ public class GlobalExceptionHandler {
         );
 
         timelineStore.add(occurrence);
+
+        ByteArrayOutputStream bos = new ByteArrayOutputStream();
+        ObjectOutputStream oos = new ObjectOutputStream(bos);
+        oos.writeObject(ex);
+        byte[] bytes = bos.toByteArray();
+        bos.flush();
+        oos.close();
+        bos.close();
+
+        log.debug("[AI-RCA]: Analyzing Exception: \n{}", bytes);
         analyzer.analyze(ex);
         throw ex;
     }

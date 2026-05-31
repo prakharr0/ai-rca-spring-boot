@@ -7,12 +7,12 @@ import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.ResponseBody;
 
 import java.time.ZoneId;
 import java.util.List;
 
-@RestController
+@ResponseBody
 @RequestMapping("/ai/rca/chat")
 public class AiRcaChatController {
 
@@ -346,7 +346,7 @@ public class AiRcaChatController {
                     </div>
                     <div class="sb-foot">
                       <div>ai-rca-spring-boot</div>
-                      <div style="color:var(--accent)">v0.0.6</div>
+                      <div style="color:var(--accent)">v0.0.7-SNAPSHOT</div>
                       <div style="margin-top:5px;font-size:10px;line-height:1.8">
                         &#9166; Enter &mdash; send<br>
                         &#8679; Shift+Enter &mdash; new line

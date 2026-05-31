@@ -1,33 +1,65 @@
 package io.github.prakharr0.ai.rca.spring.boot.core.model;
 
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
+
 import java.util.List;
 
 /**
  * Represents the structured result of an AI-powered Root Cause Analysis.
  *
- * <p>This record is returned after an exception is intercepted and analyzed.
- * It contains ranked root cause hypotheses, a confidence score, and any
- * missing context that could improve the analysis.
+ * <p>This record is produced in two stages:
+ * <ol>
+ *   <li>Jackson deserializes the AI model's JSON response into an instance where
+ *       {@code metadata} is {@code null} (the model does not output this field).</li>
+ *   <li>The analyzer calls {@link #withMetadata(AnalysisMetadata)} to attach
+ *       token usage and other observability data from the {@code ChatResponse}.</li>
+ * </ol>
+ *
+ * <p>{@code @JsonIgnoreProperties(ignoreUnknown = true)} ensures that any fields
+ * the model outputs beyond the defined schema do not cause deserialization failures.
  *
  * @param analysisConfidence  A score between {@code 0.0} and {@code 1.0} indicating
  *                            how confident the AI is in the analysis.
- *                            Higher values indicate stronger signal from the available context.
- * @param knownPattern        A named pattern the AI matched this exception against, if any.
- *                            Example: {@code "Spring DataSource misconfiguration"}.
- *                            {@code null} or empty if no known pattern was matched.
- * @param exceptionMessage    The exception message being analyzed
- * @param missingInformation  A list of context items that were absent but would have
- *                            improved the accuracy of the analysis (e.g., logs, env vars).
- *                            Empty if all necessary context was available.
- * @param rootCauses          An ordered list of {@link RootCause} hypotheses, ranked
- *                            from most to least likely.
+ * @param knownPattern        A named pattern the AI matched this exception against.
+ *                            Never {@code null} — the model is instructed to always provide one.
+ * @param exceptionMessage    The exception message being analyzed.
+ * @param missingInformation  Context items absent but that would improve accuracy.
+ *                            Empty list when confidence is sufficient.
+ * @param rootCauses          Ordered list of {@link RootCause} hypotheses, ranked 1 = most likely.
+ * @param metadata            Token usage and call observability data. {@code null} only when
+ *                            this instance was produced directly from AI JSON without enrichment.
  *
  * @see RootCause
+ * @see AnalysisMetadata
  */
+@JsonIgnoreProperties(ignoreUnknown = true)
 public record AiRcaResponse(
         double analysisConfidence,
         String knownPattern,
         String exceptionMessage,
         List<String> missingInformation,
-        List<RootCause> rootCauses
-) {}
+        List<RootCause> rootCauses,
+        AnalysisMetadata metadata
+) {
+
+    /**
+     * Returns a new {@code AiRcaResponse} with the given metadata attached.
+     *
+     * <p>Used by the analyzer after deserializing the AI's JSON response (which does not
+     * contain metadata) to produce the final enriched result stored in the cache and
+     * returned to consumers.
+     *
+     * @param metadata the token usage and observability data for this call
+     * @return a new instance identical to this one but with {@code metadata} set
+     */
+    public AiRcaResponse withMetadata(AnalysisMetadata metadata) {
+        return new AiRcaResponse(
+                analysisConfidence,
+                knownPattern,
+                exceptionMessage,
+                missingInformation,
+                rootCauses,
+                metadata
+        );
+    }
+}

@@ -1,0 +1,17 @@
+spring:
+  application:
+    name: RcaTest
+  ai:
+    anthropic:
+      api-key: ${ANTHROPIC_KEY}
+      chat:
+        options:
+          model: claude-sonnet-4-6
+
+ai:
+  rca:
+    enabled: true
+
+logging:
+  level:
+    io.github.prakharr0: debug
