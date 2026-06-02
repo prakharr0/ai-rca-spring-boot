@@ -2,11 +2,11 @@ spring:
   application:
     name: RcaTest
   ai:
-    anthropic:
-      api-key: ${ANTHROPIC_KEY}
+    openai:
+      api-key: ${OPENAI_KEY}
       chat:
         options:
-          model: claude-sonnet-4-6
+          model: gpt-4o-mini
 
 ai:
   rca:

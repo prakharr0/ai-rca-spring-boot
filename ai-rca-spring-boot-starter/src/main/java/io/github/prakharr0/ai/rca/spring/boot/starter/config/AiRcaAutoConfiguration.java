@@ -105,18 +105,26 @@ public class AiRcaAutoConfiguration {
      * via {@code defaultOptions()} only affects the RCA ChatClient — other ChatClient beans
      * (e.g. the chat service) receive their own independent builder instance.
      */
-    @Bean
-    @ConditionalOnMissingBean
-    public DefaultAiRcaAnalyzer aiRcaAnalyzer(
+    @Bean("rcaAnalyzerChatClient")
+    @ConditionalOnMissingBean(name = "rcaAnalyzerChatClient")
+    public ChatClient rcaAnalyzerChatClient(
             ChatClient.Builder builder,
             ObjectProvider<ChatModel> chatModelProvider,
-            ContextCollector collector,
-            ObjectMapper objectMapper,
-            ExceptionTimelineStore timelineStore,
             AiRcaProperties properties
     ) {
         applyRcaDefaults(builder, chatModelProvider, properties);
-        return new DefaultAiRcaAnalyzer(builder.build(), collector, objectMapper, timelineStore);
+        return builder.build();
+    }
+
+    @Bean
+    @ConditionalOnMissingBean
+    public DefaultAiRcaAnalyzer aiRcaAnalyzer(
+            ChatClient rcaAnalyzerChatClient,
+            ContextCollector collector,
+            ObjectMapper objectMapper,
+            ExceptionTimelineStore timelineStore
+    ) {
+        return new DefaultAiRcaAnalyzer(rcaAnalyzerChatClient, collector, objectMapper, timelineStore);
     }
 
     /**
