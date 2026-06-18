@@ -1,0 +1,19 @@
+{
+  "id": "http_4xx_downstream",
+  "description": "HttpClientErrorException 404 calling external inventory service via RestTemplate",
+  "exceptionType": "org.springframework.web.client.HttpClientErrorException",
+  "rootCauseType": "org.springframework.web.client.HttpClientErrorException$NotFound",
+  "rootCauseMessage": "404 Not Found: [{\"error\":\"SKU_NOT_FOUND\",\"sku\":\"ITEM-9999\"}]",
+  "stackTrace": "org.springframework.web.client.HttpClientErrorException$NotFound: 404 Not Found\n\tat org.springframework.web.client.HttpClientErrorException.create(HttpClientErrorException.java:113)\n\tat org.springframework.web.client.DefaultResponseErrorHandler.handleError(DefaultResponseErrorHandler.java:183)\n\tat com.example.client.InventoryClient.checkStock(InventoryClient.java:57)\n\tat com.example.service.CheckoutService.validateCart(CheckoutService.java:92)\n\tat com.example.controller.CheckoutController.checkout(CheckoutController.java:38)",
+  "recentLogs": "2024-01-15 15:44:10 INFO  [http-nio-8080-exec-2] c.e.CheckoutController - POST /checkout from user=u-4421\n2024-01-15 15:44:10 DEBUG [http-nio-8080-exec-2] c.e.InventoryClient - GET https://inventory.internal/api/v2/stock/ITEM-9999\n2024-01-15 15:44:10 ERROR [http-nio-8080-exec-2] c.e.InventoryClient - Inventory API returned 404 for SKU ITEM-9999",
+  "springVersion": "3.2.0",
+  "javaVersion": "21",
+  "activeProfiles": "prod",
+  "packaging": "jar",
+  "deploymentEnvironment": "kubernetes",
+  "database": "jdbc",
+  "webStack": "spring-mvc",
+  "buildTool": "maven",
+  "expectedCategory": "Dependency",
+  "expectedRank1Keywords": ["sku", "not found", "inventory", "downstream", "external", "404"]
+}

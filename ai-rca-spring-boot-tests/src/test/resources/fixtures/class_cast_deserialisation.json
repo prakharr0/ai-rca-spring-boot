@@ -1,0 +1,19 @@
+{
+  "id": "class_cast_deserialisation",
+  "description": "ClassCastException reading from Redis cache — cached type mismatch after model change",
+  "exceptionType": "java.lang.ClassCastException",
+  "rootCauseType": "java.lang.ClassCastException",
+  "rootCauseMessage": "class com.example.dto.UserDtoV1 cannot be cast to class com.example.dto.UserDtoV2 (both in unnamed module of loader 'app')",
+  "stackTrace": "java.lang.ClassCastException: class com.example.dto.UserDtoV1 cannot be cast to class com.example.dto.UserDtoV2\n\tat com.example.service.UserCacheService.getUser(UserCacheService.java:38)\n\tat com.example.service.UserService.findCachedUser(UserService.java:54)\n\tat com.example.controller.ProfileController.getProfile(ProfileController.java:29)",
+  "recentLogs": "2024-01-15 09:30:00 INFO  [http-nio-8080-exec-4] c.e.ProfileController - GET /profile/u-1234\n2024-01-15 09:30:00 DEBUG [http-nio-8080-exec-4] c.e.UserCacheService - Cache hit for key=user:u-1234\n2024-01-15 09:30:00 ERROR [http-nio-8080-exec-4] c.e.UserCacheService - Type mismatch reading from Redis — stale serialized object",
+  "springVersion": "3.2.0",
+  "javaVersion": "21",
+  "activeProfiles": "prod",
+  "packaging": "jar",
+  "deploymentEnvironment": "kubernetes",
+  "database": "jdbc",
+  "webStack": "spring-mvc",
+  "buildTool": "maven",
+  "expectedCategory": "Code",
+  "expectedRank1Keywords": ["cache", "stale", "type", "version", "serialized", "cast"]
+}

@@ -1,0 +1,19 @@
+{
+  "id": "db_connection_timeout",
+  "description": "CannotGetJdbcConnectionException — DB host unreachable or connection pool exhausted",
+  "exceptionType": "org.springframework.jdbc.CannotGetJdbcConnectionException",
+  "rootCauseType": "java.sql.SQLTimeoutException",
+  "rootCauseMessage": "Timeout after 30000ms waiting for connection from pool",
+  "stackTrace": "org.springframework.jdbc.CannotGetJdbcConnectionException: Failed to obtain JDBC Connection\n\tat org.springframework.jdbc.datasource.DataSourceUtils.getConnection(DataSourceUtils.java:82)\n\tat org.springframework.jdbc.core.JdbcTemplate.execute(JdbcTemplate.java:330)\n\tat com.example.repository.ProductRepository.findAll(ProductRepository.java:33)\n\tat com.example.service.ProductService.listProducts(ProductService.java:19)\nCaused by: java.sql.SQLTimeoutException: Timeout after 30000ms waiting for connection from pool\n\tat com.zaxxer.hikari.pool.HikariPool.getConnection(HikariPool.java:213)\n\tat com.zaxxer.hikari.HikariDataSource.getConnection(HikariDataSource.java:100)",
+  "recentLogs": "2024-01-15 11:00:02 INFO  [http-nio-8080-exec-1] c.e.ProductService - Listing all products\n2024-01-15 11:00:02 WARN  [HikariPool-1 connection adder] c.z.h.p.HikariPool - Timeout waiting for idle connection, stats=(total=20, active=20, idle=0, waiting=14)\n2024-01-15 11:00:32 ERROR [http-nio-8080-exec-1] c.e.GlobalExceptionHandler - DB connection unavailable",
+  "springVersion": "3.2.0",
+  "javaVersion": "21",
+  "activeProfiles": "prod",
+  "packaging": "jar",
+  "deploymentEnvironment": "kubernetes",
+  "database": "jdbc",
+  "webStack": "spring-mvc",
+  "buildTool": "maven",
+  "expectedCategory": "Infrastructure",
+  "expectedRank1Keywords": ["connection", "pool", "exhausted", "timeout", "hikari", "database"]
+}

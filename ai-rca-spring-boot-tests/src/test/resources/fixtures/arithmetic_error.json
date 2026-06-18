@@ -1,0 +1,19 @@
+{
+  "id": "arithmetic_error",
+  "description": "ArithmeticException divide-by-zero in discount calculation — total quantity can be zero",
+  "exceptionType": "java.lang.ArithmeticException",
+  "rootCauseType": "java.lang.ArithmeticException",
+  "rootCauseMessage": "/ by zero",
+  "stackTrace": "java.lang.ArithmeticException: / by zero\n\tat com.example.service.PricingService.calculateUnitPrice(PricingService.java:58)\n\tat com.example.service.PricingService.applyBulkDiscount(PricingService.java:39)\n\tat com.example.controller.CartController.recalculate(CartController.java:62)",
+  "recentLogs": "2024-01-15 13:45:00 INFO  [http-nio-8080-exec-8] c.e.CartController - POST /cart/recalculate for cart=c-5512\n2024-01-15 13:45:00 DEBUG [http-nio-8080-exec-8] c.e.PricingService - Applying bulk discount, totalQuantity=0\n2024-01-15 13:45:00 ERROR [http-nio-8080-exec-8] c.e.CartController - Price recalculation failed",
+  "springVersion": "3.2.0",
+  "javaVersion": "21",
+  "activeProfiles": "default",
+  "packaging": "jar",
+  "deploymentEnvironment": "local",
+  "database": "jdbc",
+  "webStack": "spring-mvc",
+  "buildTool": "maven",
+  "expectedCategory": "Code",
+  "expectedRank1Keywords": ["zero", "divide", "quantity", "validation", "guard", "check"]
+}

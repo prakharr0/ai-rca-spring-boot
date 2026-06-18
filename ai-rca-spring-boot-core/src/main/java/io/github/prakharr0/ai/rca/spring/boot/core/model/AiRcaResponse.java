@@ -39,27 +39,17 @@ public record AiRcaResponse(
         String exceptionMessage,
         List<String> missingInformation,
         List<RootCause> rootCauses,
-        AnalysisMetadata metadata
+        AnalysisMetadata metadata,
+        boolean lowConfidence
 ) {
 
-    /**
-     * Returns a new {@code AiRcaResponse} with the given metadata attached.
-     *
-     * <p>Used by the analyzer after deserializing the AI's JSON response (which does not
-     * contain metadata) to produce the final enriched result stored in the cache and
-     * returned to consumers.
-     *
-     * @param metadata the token usage and observability data for this call
-     * @return a new instance identical to this one but with {@code metadata} set
-     */
     public AiRcaResponse withMetadata(AnalysisMetadata metadata) {
-        return new AiRcaResponse(
-                analysisConfidence,
-                knownPattern,
-                exceptionMessage,
-                missingInformation,
-                rootCauses,
-                metadata
-        );
+        return new AiRcaResponse(analysisConfidence, knownPattern, exceptionMessage,
+                missingInformation, rootCauses, metadata, lowConfidence);
+    }
+
+    public AiRcaResponse withLowConfidenceFlag(boolean lowConfidence) {
+        return new AiRcaResponse(analysisConfidence, knownPattern, exceptionMessage,
+                missingInformation, rootCauses, metadata, lowConfidence);
     }
 }

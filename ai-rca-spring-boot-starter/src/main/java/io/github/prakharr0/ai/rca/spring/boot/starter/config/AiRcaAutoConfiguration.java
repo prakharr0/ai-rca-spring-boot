@@ -122,9 +122,13 @@ public class AiRcaAutoConfiguration {
             ChatClient rcaAnalyzerChatClient,
             ContextCollector collector,
             ObjectMapper objectMapper,
-            ExceptionTimelineStore timelineStore
+            ExceptionTimelineStore timelineStore,
+            AiRcaProperties properties
     ) {
-        return new DefaultAiRcaAnalyzer(rcaAnalyzerChatClient, collector, objectMapper, timelineStore);
+        return new DefaultAiRcaAnalyzer(
+                rcaAnalyzerChatClient, collector, objectMapper, timelineStore,
+                properties.getMinConfidence(), properties.getLowConfidenceAction()
+        );
     }
 
     /**

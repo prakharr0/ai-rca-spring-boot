@@ -1,0 +1,19 @@
+{
+  "id": "env_missing_config",
+  "description": "IllegalStateException at startup — required env var PAYMENT_API_KEY not set in prod environment",
+  "exceptionType": "java.lang.IllegalStateException",
+  "rootCauseType": "java.lang.IllegalStateException",
+  "rootCauseMessage": "Required environment variable PAYMENT_API_KEY is not set",
+  "stackTrace": "java.lang.IllegalStateException: Required environment variable PAYMENT_API_KEY is not set\n\tat com.example.config.PaymentConfig.paymentApiKey(PaymentConfig.java:31)\n\tat com.example.config.PaymentConfig$$SpringCGLIB$$0.paymentApiKey(<generated>)\n\tat sun.reflect.NativeMethodAccessorImpl.invoke0(Native Method)\n\tat org.springframework.beans.factory.support.SimpleInstantiationStrategy.instantiate(SimpleInstantiationStrategy.java:117)\n\tat org.springframework.beans.factory.support.AbstractAutowireCapableBeanFactory.instantiateBean(AbstractAutowireCapableBeanFactory.java:1326)",
+  "recentLogs": "2024-01-15 06:00:00 INFO  [main] o.s.b.SpringApplication - Starting PaymentsApplication on pod payments-7d9b4c-xqr2p\n2024-01-15 06:00:00 INFO  [main] o.s.b.SpringApplication - Active profiles: prod\n2024-01-15 06:00:01 WARN  [main] c.e.PaymentConfig - PAYMENT_API_KEY not found in environment\n2024-01-15 06:00:01 ERROR [main] o.s.b.SpringApplication - Application run failed",
+  "springVersion": "3.2.0",
+  "javaVersion": "21",
+  "activeProfiles": "prod",
+  "packaging": "jar",
+  "deploymentEnvironment": "kubernetes",
+  "database": "jdbc",
+  "webStack": "spring-mvc",
+  "buildTool": "maven",
+  "expectedCategory": "Environment",
+  "expectedRank1Keywords": ["environment", "variable", "secret", "missing", "kubernetes", "config"]
+}

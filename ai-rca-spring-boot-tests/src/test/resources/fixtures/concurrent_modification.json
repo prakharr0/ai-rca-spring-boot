@@ -1,0 +1,19 @@
+{
+  "id": "concurrent_modification",
+  "description": "ConcurrentModificationException — iterating a shared list while another thread modifies it",
+  "exceptionType": "java.util.ConcurrentModificationException",
+  "rootCauseType": "java.util.ConcurrentModificationException",
+  "rootCauseMessage": null,
+  "stackTrace": "java.util.ConcurrentModificationException\n\tat java.util.ArrayList$Itr.checkForComodification(ArrayList.java:911)\n\tat java.util.ArrayList$Itr.next(ArrayList.java:861)\n\tat com.example.service.NotificationService.broadcastAll(NotificationService.java:72)\n\tat com.example.scheduler.NotificationScheduler.run(NotificationScheduler.java:28)\n\tat org.springframework.scheduling.support.DelegatingErrorHandlingRunnable.run(DelegatingErrorHandlingRunnable.java:54)",
+  "recentLogs": "2024-01-15 12:00:00 INFO  [scheduling-1] c.e.NotificationScheduler - Broadcasting to 142 subscribers\n2024-01-15 12:00:00 DEBUG [http-nio-8080-exec-9] c.e.SubscriberService - New subscriber registered (modifying list)\n2024-01-15 12:00:00 ERROR [scheduling-1] c.e.NotificationScheduler - Broadcast failed with ConcurrentModificationException",
+  "springVersion": "3.2.0",
+  "javaVersion": "21",
+  "activeProfiles": "default",
+  "packaging": "jar",
+  "deploymentEnvironment": "local",
+  "database": "none",
+  "webStack": "spring-mvc",
+  "buildTool": "maven",
+  "expectedCategory": "Code",
+  "expectedRank1Keywords": ["concurrent", "thread", "shared", "list", "synchroni", "modification"]
+}

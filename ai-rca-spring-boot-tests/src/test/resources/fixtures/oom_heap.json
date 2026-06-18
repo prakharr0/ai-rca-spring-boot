@@ -1,0 +1,19 @@
+{
+  "id": "oom_heap",
+  "description": "OutOfMemoryError in batch processor — loading too many records into memory at once",
+  "exceptionType": "java.lang.OutOfMemoryError",
+  "rootCauseType": "java.lang.OutOfMemoryError",
+  "rootCauseMessage": "Java heap space",
+  "stackTrace": "java.lang.OutOfMemoryError: Java heap space\n\tat java.util.Arrays.copyOf(Arrays.java:3240)\n\tat java.util.ArrayList.grow(ArrayList.java:265)\n\tat com.example.batch.InvoiceBatchProcessor.loadAllInvoices(InvoiceBatchProcessor.java:61)\n\tat com.example.batch.InvoiceBatchProcessor.process(InvoiceBatchProcessor.java:34)\n\tat org.springframework.batch.core.step.item.SimpleChunkProcessor.process(SimpleChunkProcessor.java:199)\n\tat org.springframework.batch.core.step.item.ChunkOrientedTasklet.execute(ChunkOrientedTasklet.java:75)",
+  "recentLogs": "2024-01-15 02:00:00 INFO  [batch-job-thread-1] c.e.InvoiceBatchProcessor - Starting invoice batch job, estimated records=2400000\n2024-01-15 02:01:14 WARN  [batch-job-thread-1] c.e.InvoiceBatchProcessor - Loaded 800000 records into memory\n2024-01-15 02:02:38 WARN  [batch-job-thread-1] c.e.InvoiceBatchProcessor - Loaded 1600000 records into memory\n2024-01-15 02:03:51 ERROR [batch-job-thread-1] o.s.batch.core.step.AbstractStep - Encountered an error executing step",
+  "springVersion": "3.2.0",
+  "javaVersion": "21",
+  "activeProfiles": "batch",
+  "packaging": "jar",
+  "deploymentEnvironment": "kubernetes",
+  "database": "jdbc",
+  "webStack": "none",
+  "buildTool": "maven",
+  "expectedCategory": "Code",
+  "expectedRank1Keywords": ["memory", "heap", "batch", "pagination", "load", "all"]
+}

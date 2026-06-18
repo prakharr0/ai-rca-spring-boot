@@ -1,0 +1,19 @@
+{
+  "id": "http_timeout_downstream",
+  "description": "SocketTimeoutException calling payment gateway — read timeout after 5s",
+  "exceptionType": "org.springframework.web.client.ResourceAccessException",
+  "rootCauseType": "java.net.SocketTimeoutException",
+  "rootCauseMessage": "Read timed out",
+  "stackTrace": "org.springframework.web.client.ResourceAccessException: I/O error on POST request for \"https://payments.gateway.io/v1/charge\": Read timed out\n\tat org.springframework.web.client.RestTemplate.doExecute(RestTemplate.java:810)\n\tat com.example.client.PaymentGatewayClient.charge(PaymentGatewayClient.java:43)\n\tat com.example.service.PaymentService.processPayment(PaymentService.java:67)\n\tat com.example.controller.OrderController.placeOrder(OrderController.java:81)\nCaused by: java.net.SocketTimeoutException: Read timed out\n\tat java.net.SocketInputStream.socketRead0(Native Method)\n\tat sun.security.ssl.SSLSocketImpl.read(SSLSocketImpl.java:1162)",
+  "recentLogs": "2024-01-15 18:22:01 INFO  [http-nio-8080-exec-5] c.e.OrderController - POST /orders from user=u-8812\n2024-01-15 18:22:01 INFO  [http-nio-8080-exec-5] c.e.PaymentGatewayClient - Charging card for amount=49.99 GBP\n2024-01-15 18:22:06 ERROR [http-nio-8080-exec-5] c.e.PaymentGatewayClient - Payment gateway timed out after 5000ms",
+  "springVersion": "3.2.0",
+  "javaVersion": "21",
+  "activeProfiles": "prod",
+  "packaging": "jar",
+  "deploymentEnvironment": "kubernetes",
+  "database": "jdbc",
+  "webStack": "spring-mvc",
+  "buildTool": "maven",
+  "expectedCategory": "Dependency",
+  "expectedRank1Keywords": ["timeout", "payment", "gateway", "read", "downstream", "socket"]
+}

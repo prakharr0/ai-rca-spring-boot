@@ -1,5 +1,6 @@
 package io.github.prakharr0.ai.rca.spring.boot.starter.config;
 
+import io.github.prakharr0.ai.rca.spring.boot.core.analysis.LowConfidenceAction;
 import lombok.Getter;
 import lombok.Setter;
 import org.springframework.boot.context.properties.ConfigurationProperties;
@@ -83,6 +84,30 @@ public class AiRcaProperties {
      * in approximately 10–15% of calls.
      */
     private Double temperature = null;
+
+    /**
+     * Minimum acceptable analysis confidence score (0.0–1.0).
+     *
+     * <p>When set above 0.0, any AI result whose {@code analysisConfidence} falls below
+     * this threshold triggers {@link #lowConfidenceAction}. Set to {@code 0.0} (default)
+     * to disable the threshold entirely and accept all results regardless of confidence.
+     *
+     * <p>Example: setting {@code 0.7} means results below 70% confidence are flagged or
+     * skipped, depending on {@link #lowConfidenceAction}.
+     */
+    private double minConfidence = 0.0;
+
+    /**
+     * Action to take when analysis confidence falls below {@link #minConfidence}.
+     *
+     * <ul>
+     *   <li>{@code LOG_WARN} (default) — store the result but tag it with
+     *       {@code lowConfidence: true} so consumers can filter it.</li>
+     *   <li>{@code SKIP} — discard the result and mark the event as failed.
+     *       Use when downstream consumers must not receive low-quality analyses.</li>
+     * </ul>
+     */
+    private LowConfidenceAction lowConfidenceAction = LowConfidenceAction.LOG_WARN;
 
     /**
      * Optional max-tokens override for RCA analysis calls.

@@ -1,0 +1,19 @@
+{
+  "id": "npe_deep_stack",
+  "description": "NPE buried under Spring MVC and Tomcat framework frames — harder to locate",
+  "exceptionType": "java.lang.NullPointerException",
+  "rootCauseType": "java.lang.NullPointerException",
+  "rootCauseMessage": "Cannot invoke \"com.example.domain.Order.getCustomer()\" because the return value of \"OrderRepository.findByReference(String)\" is null",
+  "stackTrace": "java.lang.NullPointerException: Cannot invoke \"com.example.domain.Order.getCustomer()\" because the return value of \"OrderRepository.findByReference(String)\" is null\n\tat com.example.service.OrderService.processRefund(OrderService.java:87)\n\tat com.example.service.OrderService$$SpringCGLIB$$0.processRefund(<generated>)\n\tat com.example.web.OrderController.refund(OrderController.java:54)\n\tat sun.reflect.NativeMethodAccessorImpl.invoke0(Native Method)\n\tat org.springframework.web.method.support.InvocableHandlerMethod.doInvoke(InvocableHandlerMethod.java:207)\n\tat org.springframework.web.method.support.InvocableHandlerMethod.invokeForRequest(InvocableHandlerMethod.java:152)\n\tat org.springframework.web.servlet.mvc.method.annotation.ServletInvocableHandlerMethod.invokeAndHandle(ServletInvocableHandlerMethod.java:117)\n\tat org.springframework.web.servlet.mvc.method.annotation.RequestMappingHandlerAdapter.invokeHandlerMethod(RequestMappingHandlerAdapter.java:884)\n\tat org.apache.catalina.core.ApplicationFilterChain.internalDoFilter(ApplicationFilterChain.java:227)\n\tat org.apache.catalina.core.StandardWrapperValve.invoke(StandardWrapperValve.java:197)",
+  "recentLogs": "2024-01-15 10:14:22 INFO  [http-nio-8080-exec-7] c.e.OrderController - POST /orders/REF-9921/refund\n2024-01-15 10:14:22 DEBUG [http-nio-8080-exec-7] c.e.OrderService - Looking up order by reference REF-9921\n2024-01-15 10:14:22 DEBUG [http-nio-8080-exec-7] c.e.OrderRepository - Query returned null for reference REF-9921\n2024-01-15 10:14:22 ERROR [http-nio-8080-exec-7] o.s.web.servlet.DispatcherServlet - Servlet.service() threw exception",
+  "springVersion": "3.2.0",
+  "javaVersion": "21",
+  "activeProfiles": "prod",
+  "packaging": "jar",
+  "deploymentEnvironment": "kubernetes",
+  "database": "jdbc",
+  "webStack": "spring-mvc",
+  "buildTool": "maven",
+  "expectedCategory": "Code",
+  "expectedRank1Keywords": ["null", "repository", "order", "missing", "not found"]
+}
