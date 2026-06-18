@@ -7,6 +7,7 @@ import io.github.prakharr0.ai.rca.spring.boot.core.prompt.SystemPrompts;
 import io.github.prakharr0.ai.rca.spring.boot.core.prompt.UserPromptBuilder;
 import lombok.extern.slf4j.Slf4j;
 import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.ValueSource;
 import org.springframework.ai.chat.client.ChatClient;
@@ -30,6 +31,8 @@ import java.util.stream.Collectors;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 
+// This test is to be executed with ENV VAR for LLM API KEY
+@Disabled
 @Slf4j
 @SpringBootTest
 @ActiveProfiles("test")

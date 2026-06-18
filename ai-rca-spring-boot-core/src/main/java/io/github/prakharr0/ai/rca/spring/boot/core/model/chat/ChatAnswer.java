@@ -6,6 +6,8 @@ import java.util.List;
 public record ChatAnswer(
         String answer,
         List<String> referencedEventIds,
-        Instant resolvedTime
+        Instant resolvedTime,
+        Long inputTokens,
+        Long outputTokens
 ) {
 }
