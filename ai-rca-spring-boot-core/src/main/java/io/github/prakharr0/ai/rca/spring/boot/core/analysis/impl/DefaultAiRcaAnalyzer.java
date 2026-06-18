@@ -1,11 +1,14 @@
 package io.github.prakharr0.ai.rca.spring.boot.core.analysis.impl;
 
+import io.github.prakharr0.ai.rca.spring.boot.core.model.AnalysisMetadata;
 import io.github.prakharr0.ai.rca.spring.boot.core.model.AiRcaResponse;
 import io.github.prakharr0.ai.rca.spring.boot.core.store.ExceptionTimelineStore;
 import lombok.RequiredArgsConstructor;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.ai.chat.client.ChatClient;
+import org.springframework.ai.chat.model.ChatResponse;
+import org.springframework.ai.chat.metadata.Usage;
 import org.springframework.scheduling.annotation.Async;
 import io.github.prakharr0.ai.rca.spring.boot.core.analysis.AiRcaAnalyzer;
 import io.github.prakharr0.ai.rca.spring.boot.core.context.ContextCollector;
@@ -127,7 +130,6 @@ public class DefaultAiRcaAnalyzer implements AiRcaAnalyzer {
     @Async
     @Override
     public void analyze(Throwable throwable) {
-
         ContextSnapshot snapshot = collector.collect(throwable);
         String fingerprint = ExceptionFingerprint.generate(snapshot);
 
@@ -135,24 +137,26 @@ public class DefaultAiRcaAnalyzer implements AiRcaAnalyzer {
         if (cache.containsKey(fingerprint)) {
             response = cache.get(fingerprint);
         } else {
-            String aiResponse = chatClient.prompt()
+            ChatResponse chatResponse = chatClient.prompt()
                     .system(SystemPrompts.SYSTEM_PROMPT)
                     .user(UserPromptBuilder.build(snapshot))
                     .call()
-                    .content();
+                    .chatResponse();
 
-            if (aiResponse == null) {
+            if (chatResponse == null || chatResponse.getResult() == null) {
                 log.warn("AI Analysis Failed for {}", throwable.getMessage(), throwable.getCause());
                 timelineStore.markFailureByFingerprint(fingerprint, "AI response was empty");
                 return;
             }
 
-            aiResponse = stripMarkdown(aiResponse);
+            String content = stripMarkdown(chatResponse.getResult().getOutput().getText());
+            AnalysisMetadata metadata = extractMetadata(chatResponse);
 
             try {
-                response = objectMapper.readValue(aiResponse, AiRcaResponse.class);
+                response = objectMapper.readValue(content, AiRcaResponse.class)
+                        .withMetadata(metadata);
             } catch (Exception e) {
-                log.warn("[AI-RCA-SPRING-BOOT-STARTER] Analysis results for: {}\n{}", throwable.getLocalizedMessage(), aiResponse);
+                log.warn("[AI-RCA-SPRING-BOOT-STARTER] Analysis results for: {}\n{}", throwable.getLocalizedMessage(), content);
                 timelineStore.markFailureByFingerprint(fingerprint, "AI response could not be parsed");
                 return;
             }
@@ -175,6 +179,32 @@ public class DefaultAiRcaAnalyzer implements AiRcaAnalyzer {
      */
     public Map<String, AiRcaResponse> getResults() {
         return cache;
+    }
+
+    /**
+     * Extracts token usage from the provider's {@link ChatResponse} metadata.
+     *
+     * <p>Token counts are reported by the AI provider and reflect actual API usage for this call.
+     * Both values are nullable — providers may omit usage data on error responses.
+     *
+     * <p>If {@code outputTokens} is consistently near the configured {@code max_tokens} limit,
+     * the response is likely being truncated — lower temperature or reduce prompt size.
+     */
+    private AnalysisMetadata extractMetadata(ChatResponse chatResponse) {
+        try {
+            Usage usage = chatResponse.getMetadata().getUsage();
+            Integer prompt = usage.getPromptTokens();
+            Integer completion = usage.getCompletionTokens();
+            Integer total = usage.getTotalTokens();
+            return new AnalysisMetadata(
+                    prompt.longValue(),
+                    completion.longValue(),
+                    total.longValue()
+            );
+        } catch (Exception e) {
+            log.debug("[AI-RCA] Could not extract token usage from ChatResponse metadata: {}", e.getMessage());
+            return new AnalysisMetadata(null, null, null);
+        }
     }
 
     /**

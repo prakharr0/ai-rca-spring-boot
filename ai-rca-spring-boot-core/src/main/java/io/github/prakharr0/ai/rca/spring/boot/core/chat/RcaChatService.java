@@ -4,7 +4,11 @@ import io.github.prakharr0.ai.rca.spring.boot.core.model.chat.ChatAnswer;
 import io.github.prakharr0.ai.rca.spring.boot.core.store.ExceptionOccurrence;
 import io.github.prakharr0.ai.rca.spring.boot.core.store.ExceptionTimelineStore;
 import io.github.prakharr0.ai.rca.spring.boot.core.util.RcaTimeParser;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.ai.chat.client.ChatClient;
+import org.springframework.ai.chat.metadata.Usage;
+import org.springframework.ai.chat.model.ChatResponse;
 import tools.jackson.databind.ObjectMapper;
 
 import java.time.Duration;
@@ -18,21 +22,47 @@ import java.util.regex.Pattern;
 
 public class RcaChatService {
 
+    private static final Logger log = LoggerFactory.getLogger(RcaChatService.class);
+
     private static final Pattern NATURAL_TIME_PATTERN = Pattern.compile(
             "(\\d{1,2}(?::\\d{2})?\\s*(?:AM|PM|am|pm)\\s+on\\s+\\d{1,2}\\s+[A-Za-z]+\\s+\\d{4})"
     );
 
     private static final String CHAT_SYSTEM_PROMPT = """
-            You are an RCA assistant for Spring Boot production incidents.
-            Use only the provided event timeline and analysis output.
-            If data is insufficient, explicitly say what is missing.
-            When asked "why" for an event, summarize the ranked root causes and confidence.
-            Keep the answer concise and factual.
+            You are an AI-powered RCA (Root Cause Analysis) assistant for Spring Boot production incidents.
+
+            You receive structured JSON event context. Each object is an ExceptionOccurrence with:
+              - eventId, occurredAt, exceptionType, rootCauseType, exceptionMessage
+              - httpMethod, requestPath, threadName
+              - analysisStatus: COMPLETED | PENDING | FAILED
+              - analysis (only present when COMPLETED):
+                  - analysisConfidence: float 0.0–1.0
+                  - knownPattern: named failure pattern (never null)
+                  - rootCauses[]: ranked hypotheses, each with:
+                      rank (1 = most likely), title, likelihood (High/Medium/Low),
+                      category (Configuration|Code|Infrastructure|Dependency|Environment),
+                      reasoning (2 sentences), diagnosticStep (1 sentence), estimatedTimeToVerify
+                  - missingInformation[]: what would raise confidence (empty if confidence >= 0.6)
+
+            Rules for answering:
+            1. For "why did X happen" or root cause questions:
+               - State the rank-1 root cause title and its likelihood first.
+               - Give a one-sentence summary of the reasoning.
+               - List remaining ranked causes briefly if there are more than one.
+               - State the analysis confidence as a percentage (e.g. "Confidence: 82%").
+               - State the knownPattern if present.
+               - End with the top diagnosticStep as the recommended next action.
+            2. For timeline or count questions: summarize from occurredAt timestamps.
+            3. If analysisStatus is PENDING or FAILED, say so — do not invent a root cause.
+            4. If missingInformation is non-empty, mention what is missing and why it matters.
+            5. Use only the data provided — do not hallucinate or infer beyond the JSON.
+            6. If no events match the question, say so clearly.
+
             Formatting rules:
-            - Do not use markdown tables.
-            - Do not use pipe-separated output.
-            - Use short section headings where useful.
-            - Put each key point on a new line.
+            - No markdown tables or pipe-separated lines.
+            - Use bold headings for sections: **Root Cause**, **Confidence**, **Pattern**, **Next Step**.
+            - Put each key fact on its own line.
+            - Be factual and direct — no filler phrases.
             """;
 
     private final ChatClient chatClient;
@@ -57,7 +87,7 @@ public class RcaChatService {
 
     public ChatAnswer chat(String question, Integer toleranceSeconds, ZoneId zoneId) {
         if (question == null || question.isBlank()) {
-            return new ChatAnswer("Ask a question about exception timeline or RCA output.", List.of(), null);
+            return new ChatAnswer("Ask a question about exception timeline or RCA output.", List.of(), null, null, null);
         }
 
         Instant resolvedTime = resolveTimeFromQuestion(question, zoneId).orElse(null);
@@ -70,14 +100,16 @@ public class RcaChatService {
                 return new ChatAnswer(
                         "No exception event was found near %s (tolerance %d seconds).".formatted(resolvedTime, tolerance.toSeconds()),
                         List.of(),
-                        resolvedTime
+                        resolvedTime,
+                        null,
+                        null
                 );
             }
             context = List.of(nearest);
         } else {
             context = timelineStore.latest(defaultContextEvents);
             if (context.isEmpty()) {
-                return new ChatAnswer("No exception events are available yet.", List.of(), null);
+                return new ChatAnswer("No exception events are available yet.", List.of(), null, null, null);
             }
         }
 
@@ -88,29 +120,48 @@ public class RcaChatService {
             promptContext = "[]";
         }
 
-        String response = chatClient.prompt()
+        ChatResponse chatResponse = chatClient.prompt()
                 .system(CHAT_SYSTEM_PROMPT)
                 .user("""
-                        User question:
-                        %s
-                        
-                        Event context JSON:
+                        Question: %s
+
+                        Event context (JSON):
                         %s
                         """.formatted(question, promptContext))
                 .call()
-                .content();
+                .chatResponse();
 
-        if (response == null || response.isBlank()) {
+        String response;
+        if (chatResponse == null || chatResponse.getResult() == null) {
             response = "No response was generated for this question.";
+        } else {
+            response = chatResponse.getResult().getOutput().getText();
+            if (response == null || response.isBlank()) {
+                response = "No response was generated for this question.";
+            }
         }
         response = normalizeFormatting(response);
+
+        Long inputTokens = null;
+        Long outputTokens = null;
+        if (chatResponse != null) {
+            try {
+                Usage usage = chatResponse.getMetadata().getUsage();
+                Integer prompt = usage.getPromptTokens();
+                Integer completion = usage.getCompletionTokens();
+                if (prompt != null) inputTokens = prompt.longValue();
+                if (completion != null) outputTokens = completion.longValue();
+            } catch (Exception e) {
+                log.debug("[AI-RCA] Could not extract token usage from chat response: {}", e.getMessage());
+            }
+        }
 
         List<String> referencedIds = new ArrayList<>();
         for (ExceptionOccurrence occurrence : context) {
             referencedIds.add(occurrence.getEventId());
         }
 
-        return new ChatAnswer(response.trim(), referencedIds, resolvedTime);
+        return new ChatAnswer(response.trim(), referencedIds, resolvedTime, inputTokens, outputTokens);
     }
 
     private String normalizeFormatting(String response) {

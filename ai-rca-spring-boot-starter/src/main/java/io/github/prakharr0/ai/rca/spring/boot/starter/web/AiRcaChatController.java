@@ -27,7 +27,7 @@ public class AiRcaChatController {
     @PostMapping
     public ChatResponse chat(@RequestBody ChatRequest request) {
         ChatAnswer answer = chatService.chat(request.question(), request.toleranceSeconds(), ZoneId.systemDefault());
-        return new ChatResponse(answer.answer(), answer.referencedEventIds(), answer.resolvedTime());
+        return new ChatResponse(answer.answer(), answer.referencedEventIds(), answer.resolvedTime(), answer.inputTokens(), answer.outputTokens());
     }
 
     @GetMapping(value = "/ui", produces = MediaType.TEXT_HTML_VALUE)
@@ -276,6 +276,13 @@ public class AiRcaChatController {
                       padding: 0 3px 2px;
                       display: flex; align-items: center; gap: 4px;
                     }
+                    #tok-bar {
+                      display: flex; align-items: center; gap: 10px;
+                      font-size: 11px; color: var(--muted);
+                      font-family: "Fira Code", "Consolas", monospace;
+                    }
+                    .tok-in  { color: #58a6ff; }
+                    .tok-out { color: #3fb950; }
                     /* Typing dots */
                     .td-wrap { display: flex; gap: 4px; align-items: center; padding: 2px 0; }
                     .td-wrap span {
@@ -360,6 +367,11 @@ public class AiRcaChatController {
                         <div class="tb-title">RCA Chat</div>
                         <div class="tb-status"><div class="dot"></div>Active</div>
                       </div>
+                      <div id="tok-bar" title="Token usage this session" style="display:none">
+                        <span>tokens:</span>
+                        <span class="tok-in" id="tok-in-val">&#8593;0 in</span>
+                        <span class="tok-out" id="tok-out-val">&#8595;0 out</span>
+                      </div>
                       <button id="clear-btn" onclick="clearChat()">Clear chat</button>
                     </div>
                     <div id="msgs"></div>
@@ -374,6 +386,14 @@ public class AiRcaChatController {
                     const qin    = document.getElementById('qin');
                     const sendBtn = document.getElementById('send-btn');
                     let typingEl = null;
+                    let totalIn = 0, totalOut = 0;
+
+                    function updateTokenBar() {
+                      const bar = document.getElementById('tok-bar');
+                      bar.style.display = 'flex';
+                      document.getElementById('tok-in-val').textContent  = '\\u2191' + totalIn.toLocaleString()  + ' in';
+                      document.getElementById('tok-out-val').textContent = '\\u2193' + totalOut.toLocaleString() + ' out';
+                    }
 
                     function esc(s) {
                       return String(s)
@@ -470,6 +490,8 @@ public class AiRcaChatController {
 
                     function clearChat() {
                       msgs.innerHTML = '';
+                      totalIn = 0; totalOut = 0;
+                      document.getElementById('tok-bar').style.display = 'none';
                       addMsg('bot', '<p>Chat cleared. Ask about an incident, exception type, or time range.</p>', null);
                     }
 
@@ -504,6 +526,9 @@ public class AiRcaChatController {
                           const d = new Date(data.resolvedTime);
                           extra += `<div class="res-time">&#128336; ${d.toLocaleString()}</div>`;
                         }
+                        if (data.inputTokens != null) totalIn  += data.inputTokens;
+                        if (data.outputTokens != null) totalOut += data.outputTokens;
+                        updateTokenBar();
 
                         hideTyping();
                         addMsg('bot', renderMd(data.answer || 'No answer returned.'), extra);
@@ -543,6 +568,6 @@ public class AiRcaChatController {
     public record ChatRequest(String question, Integer toleranceSeconds) {
     }
 
-    public record ChatResponse(String answer, List<String> referencedEventIds, java.time.Instant resolvedTime) {
+    public record ChatResponse(String answer, List<String> referencedEventIds, java.time.Instant resolvedTime, Long inputTokens, Long outputTokens) {
     }
 }

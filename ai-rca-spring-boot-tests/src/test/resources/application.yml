@@ -1,0 +1,17 @@
+spring:
+  application:
+    name: RcaTest
+  ai:
+    openai:
+      api-key: ${OPENAI_KEY}
+      chat:
+        options:
+          model: gpt-4o-mini
+
+ai:
+  rca:
+    enabled: true
+
+logging:
+  level:
+    io.github.prakharr0: debug

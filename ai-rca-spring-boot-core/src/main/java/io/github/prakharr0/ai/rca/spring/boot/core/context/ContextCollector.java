@@ -3,6 +3,7 @@ package io.github.prakharr0.ai.rca.spring.boot.core.context;
 import org.springframework.core.SpringVersion;
 
 import java.util.Arrays;
+import java.util.List;
 import java.util.stream.Collectors;
 
 import java.lang.management.ManagementFactory;
@@ -42,6 +43,23 @@ import java.lang.management.ManagementFactory;
 public class ContextCollector {
 
     /**
+     * Framework and JVM package prefixes that produce no diagnostic signal for application-level failures.
+     * Frames matching these are stripped from the stack trace sent to the AI — keeping only application
+     * frames that a developer could actually act on.
+     */
+    private static final List<String> FRAMEWORK_PREFIXES = List.of(
+            "org.springframework.",
+            "org.apache.tomcat.",
+            "org.apache.catalina.",
+            "org.apache.coyote.",
+            "sun.reflect.",
+            "java.lang.reflect.",
+            "com.sun.",
+            "jdk.internal.",
+            "java.util.concurrent.ThreadPoolExecutor"
+    );
+
+    /**
      * Collects contextual diagnostic information from the given exception.
      *
      * <p><b>Extraction Process:</b></p>
@@ -60,10 +78,7 @@ public class ContextCollector {
 
         Throwable root = getRootCause(ex);
 
-        String stack = Arrays.stream(root.getStackTrace())
-                .limit(15)
-                .map(StackTraceElement::toString)
-                .collect(Collectors.joining("\n"));
+        String stack = buildFilteredStackTrace(root);
 
         return new ContextSnapshot(
                 ex.getClass().getName(),
@@ -80,6 +95,41 @@ public class ContextCollector {
                 detectWebStack(),
                 detectBuildTool()
         );
+    }
+
+    /**
+     * Builds a stack trace containing only application frames — filtering out Spring, Tomcat, and JVM
+     * internals that carry no diagnostic value for application-level failures.
+     *
+     * <p>Keeps up to 20 application frames, then appends a single boundary line showing where the
+     * call entered the framework layer. This gives the AI pure signal without the noise of proxy
+     * chains and servlet containers.
+     */
+    private String buildFilteredStackTrace(Throwable root) {
+        StackTraceElement[] allFrames = root.getStackTrace();
+
+        List<String> appFrames = Arrays.stream(allFrames)
+                .filter(f -> FRAMEWORK_PREFIXES.stream().noneMatch(p -> f.getClassName().startsWith(p)))
+                .limit(20)
+                .map(StackTraceElement::toString)
+                .collect(Collectors.toList());
+
+        String frameworkBoundary = Arrays.stream(allFrames)
+                .filter(f -> FRAMEWORK_PREFIXES.stream().anyMatch(p -> f.getClassName().startsWith(p)))
+                .map(f -> "    ... via " + f + "\n    ... [framework/JVM frames omitted]")
+                .findFirst()
+                .orElse("");
+
+        if (appFrames.isEmpty()) {
+            // Fallback: if everything is framework frames (rare), keep first 10 raw
+            return Arrays.stream(allFrames)
+                    .limit(10)
+                    .map(StackTraceElement::toString)
+                    .collect(Collectors.joining("\n"));
+        }
+
+        String result = String.join("\n", appFrames);
+        return frameworkBoundary.isBlank() ? result : result + "\n" + frameworkBoundary;
     }
 
     /**

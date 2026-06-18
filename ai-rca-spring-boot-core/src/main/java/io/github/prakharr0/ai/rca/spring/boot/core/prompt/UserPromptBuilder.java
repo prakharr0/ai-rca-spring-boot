@@ -106,11 +106,7 @@ public class UserPromptBuilder {
     public static String build(ContextSnapshot c) {
 
         return """
-You are given structured production failure data.
-
-===============================
-EXCEPTION SUMMARY
-===============================
+<EXCEPTION_SUMMARY>
 
 Exception Type: 
 %s
@@ -121,19 +117,18 @@ Root Cause Type:
 Root Cause Message: 
 %s
 
-===============================
-STACK TRACE (trimmed to relevant frames)
-===============================
+</EXCEPTION_SUMMARY>
+
+<STACK_TRACE>
 %s
 
-===============================
-RECENT LOG CONTEXT (last 50 lines before failure)
-===============================
+</STACK_TRACE>
+
+<LOG_CONTEXT>
 %s
+</LOG_CONTEXT>
       
-===============================
-APPLICATION CONTEXT
-===============================  
+<APPLICATION_CONTEXT>
 Spring Boot Version: %s
 Java Version: %s
 Active Profiles: %s
@@ -142,13 +137,11 @@ Deployment Environment: %s
 Database: %s
 Web Stack: %s
 Build Tool: %s
+</APPLICATION_CONTEXT>
 
-
-===============================
-TASK
-===============================
-
-Perform structured root cause analysis.
+<INSTRUCTIONS>
+Perform structured root cause analysis of this Java production failure.
+Think step by step before assigning likelihood to each hypothesis.
 
 PHASE 1:
 List the TOP 3 most probable root causes ranked by likelihood.
@@ -180,15 +173,18 @@ IMPORTANT:
 Do NOT suggest fixes.
 Do NOT give code changes.
 Focus only on ranked root causes and diagnostics.
+</INSTRUCTIONS>
 
+<OUTPUT_FORMAT>
 Output strictly valid JSON using the schema below.
 %s
+</OUTPUT_FORMAT>
 """.formatted(
                 c.exceptionType(),
                 c.rootCauseType(),
                 c.rootCauseMessage(),
-                truncate(c.stackTrace(), 1000),
-                truncate(c.recentLogs(), 500),
+                headTruncate(c.stackTrace(), 2000),
+                tailTruncate(c.recentLogs(), 2000),
                 c.springVersion(),
                 c.javaVersion(),
                 c.activeProfiles(),
@@ -202,20 +198,24 @@ Output strictly valid JSON using the schema below.
     }
 
     /**
-     * Truncates a string to a maximum number of characters.
-     *
-     * <p>
-     * If the input is blank or {@code null}, the string {@code "N/A"} is returned.
-     * If truncation occurs, an indicator is appended.
-     *
-     * @param value the input string
-     * @param maxChars maximum allowed characters
-     * @return truncated string or original value if within limit
+     * Keeps the first {@code maxChars} characters (head truncation).
+     * Used for stack traces: top frames are highest signal, older frames are lower priority.
      */
-    private static String truncate(String value, int maxChars) {
+    private static String headTruncate(String value, int maxChars) {
         if (value == null || value.isBlank()) return "N/A";
         if (value.length() <= maxChars) return value;
-        return value.substring(0, maxChars) + "\n... [truncated]";
+        return value.substring(0, maxChars) + "\n... [stack truncated]";
+    }
+
+    /**
+     * Keeps the LAST {@code maxChars} characters (tail truncation).
+     * Used for logs: the most recent lines (closest to the exception) are highest signal.
+     * Older lines are discarded first.
+     */
+    private static String tailTruncate(String value, int maxChars) {
+        if (value == null || value.isBlank()) return "N/A";
+        if (value.length() <= maxChars) return value;
+        return "[... older log lines omitted]\n" + value.substring(value.length() - maxChars);
     }
 }
 

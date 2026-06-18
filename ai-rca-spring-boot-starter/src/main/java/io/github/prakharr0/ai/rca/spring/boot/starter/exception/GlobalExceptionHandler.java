@@ -12,6 +12,8 @@ import io.github.prakharr0.ai.rca.spring.boot.core.store.ExceptionOccurrence;
 import io.github.prakharr0.ai.rca.spring.boot.core.store.ExceptionTimelineStore;
 import org.springframework.web.context.request.WebRequest;
 
+import java.io.ByteArrayOutputStream;
+import java.io.ObjectOutputStream;
 import java.time.Instant;
 import java.util.UUID;
 
