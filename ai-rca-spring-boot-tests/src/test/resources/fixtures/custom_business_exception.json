@@ -1,0 +1,19 @@
+{
+  "id": "custom_business_exception",
+  "description": "InsufficientFundsException — balance check passed but race condition allowed overdraft",
+  "exceptionType": "com.example.exception.InsufficientFundsException",
+  "rootCauseType": "com.example.exception.InsufficientFundsException",
+  "rootCauseMessage": "Account ac-7701 has balance 12.50 but transfer of 50.00 was requested",
+  "stackTrace": "com.example.exception.InsufficientFundsException: Account ac-7701 has balance 12.50 but transfer of 50.00 was requested\n\tat com.example.service.TransferService.debit(TransferService.java:103)\n\tat com.example.service.TransferService.transfer(TransferService.java:67)\n\tat com.example.controller.TransferController.initiateTransfer(TransferController.java:44)",
+  "recentLogs": "2024-01-15 16:05:00 INFO  [http-nio-8080-exec-6] c.e.TransferController - POST /transfers from account ac-7701\n2024-01-15 16:05:00 DEBUG [http-nio-8080-exec-6] c.e.TransferService - Balance check passed: 62.50 >= 50.00\n2024-01-15 16:05:00 DEBUG [http-nio-8080-exec-4] c.e.TransferService - Concurrent debit of 50.00 from ac-7701 committed\n2024-01-15 16:05:00 ERROR [http-nio-8080-exec-6] c.e.TransferService - Transfer failed — insufficient funds",
+  "springVersion": "3.2.0",
+  "javaVersion": "21",
+  "activeProfiles": "prod",
+  "packaging": "jar",
+  "deploymentEnvironment": "kubernetes",
+  "database": "jdbc",
+  "webStack": "spring-mvc",
+  "buildTool": "maven",
+  "expectedCategory": "Code",
+  "expectedRank1Keywords": ["race", "concurrent", "balance", "check", "transaction", "isolation"]
+}

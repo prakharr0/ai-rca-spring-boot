@@ -1,5 +1,6 @@
 package io.github.prakharr0.ai.rca.spring.boot.core.analysis.impl;
 
+import io.github.prakharr0.ai.rca.spring.boot.core.analysis.LowConfidenceAction;
 import io.github.prakharr0.ai.rca.spring.boot.core.model.AnalysisMetadata;
 import io.github.prakharr0.ai.rca.spring.boot.core.model.AiRcaResponse;
 import io.github.prakharr0.ai.rca.spring.boot.core.store.ExceptionTimelineStore;
@@ -83,18 +84,21 @@ public class DefaultAiRcaAnalyzer implements AiRcaAnalyzer {
      * Spring AI client used to communicate with the configured LLM.
      */
     private final ChatClient chatClient;
-
-    /**
-     * Collects structured context information from thrown exceptions.
-     */
     private final ContextCollector collector;
-
-    /**
-     * Jackson {@link ObjectMapper} instance for potential JSON processing.
-     * (Reserved for structured output handling or future enhancements.)
-     */
     private final ObjectMapper objectMapper;
     private final ExceptionTimelineStore timelineStore;
+
+    /**
+     * Minimum confidence score to accept a result. 0.0 disables the threshold.
+     * Configured via {@code ai.rca.min-confidence}.
+     */
+    private final double minConfidence;
+
+    /**
+     * What to do when confidence falls below {@link #minConfidence}.
+     * Configured via {@code ai.rca.low-confidence-action}.
+     */
+    private final LowConfidenceAction lowConfidenceAction;
 
     /**
      * In-memory cache storing AI responses keyed by exception fingerprint.
@@ -160,9 +164,23 @@ public class DefaultAiRcaAnalyzer implements AiRcaAnalyzer {
                 timelineStore.markFailureByFingerprint(fingerprint, "AI response could not be parsed");
                 return;
             }
+
+            boolean isLowConfidence = minConfidence > 0.0 && response.analysisConfidence() < minConfidence;
+            if (isLowConfidence) {
+                log.warn("[AI-RCA] Low confidence result: score={} threshold={} fingerprint={}",
+                        response.analysisConfidence(), minConfidence, fingerprint);
+                if (lowConfidenceAction == LowConfidenceAction.SKIP) {
+                    timelineStore.markFailureByFingerprint(fingerprint,
+                            "Confidence %.2f below threshold %.2f — skipped".formatted(
+                                    response.analysisConfidence(), minConfidence));
+                    return;
+                }
+            }
+            response = response.withLowConfidenceFlag(isLowConfidence);
         }
 
-        cache.computeIfAbsent(fingerprint, k ->  response);
+        AiRcaResponse finalResponse = response;
+        cache.computeIfAbsent(fingerprint, k -> finalResponse);
         timelineStore.attachAnalysisByFingerprint(fingerprint, response);
         log.warn("[AI-RCA-SPRING-BOOT-STARTER] Analysis results for: {}\n{}", throwable.getLocalizedMessage(),
                 objectMapper.writerWithDefaultPrettyPrinter().writeValueAsString(response));

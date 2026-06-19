@@ -1,0 +1,19 @@
+{
+  "id": "circular_bean_dependency",
+  "description": "BeanCurrentlyInCreationException — circular dependency between PaymentService and AuditService",
+  "exceptionType": "org.springframework.beans.factory.BeanCreationException",
+  "rootCauseType": "org.springframework.beans.factory.BeanCurrentlyInCreationException",
+  "rootCauseMessage": "Error creating bean with name 'paymentService': Requested bean is currently in creation: Is there an unresolvable circular reference?",
+  "stackTrace": "org.springframework.beans.factory.BeanCreationException: Error creating bean with name 'paymentService'\n\tat org.springframework.beans.factory.support.AbstractAutowireCapableBeanFactory.doCreateBean(AbstractAutowireCapableBeanFactory.java:608)\nCaused by: org.springframework.beans.factory.BeanCurrentlyInCreationException: Error creating bean with name 'paymentService': Requested bean is currently in creation\n\tat org.springframework.beans.factory.support.DefaultSingletonBeanRegistry.beforeSingletonCreation(DefaultSingletonBeanRegistry.java:355)\n\tat org.springframework.beans.factory.support.DefaultSingletonBeanRegistry.getSingleton(DefaultSingletonBeanRegistry.java:227)",
+  "recentLogs": "2024-01-15 08:00:00 INFO  [main] o.s.b.SpringApplication - Starting application\n2024-01-15 08:00:01 INFO  [main] o.s.context.support.AbstractApplicationContext - Refreshing context\n2024-01-15 08:00:02 DEBUG [main] o.s.b.f.s.DefaultListableBeanFactory - Creating instance of bean 'paymentService'\n2024-01-15 08:00:02 DEBUG [main] o.s.b.f.s.DefaultListableBeanFactory - Creating instance of bean 'auditService'\n2024-01-15 08:00:02 ERROR [main] o.s.b.SpringApplication - Application run failed",
+  "springVersion": "3.2.0",
+  "javaVersion": "21",
+  "activeProfiles": "default",
+  "packaging": "jar",
+  "deploymentEnvironment": "local",
+  "database": "jdbc",
+  "webStack": "spring-mvc",
+  "buildTool": "maven",
+  "expectedCategory": "Code",
+  "expectedRank1Keywords": ["circular", "dependency", "bean", "injection", "autowire"]
+}

@@ -1,0 +1,19 @@
+{
+  "id": "db_query_syntax_error",
+  "description": "BadSqlGrammarException — typo in JPQL or native query annotation",
+  "exceptionType": "org.springframework.jdbc.BadSqlGrammarException",
+  "rootCauseType": "org.postgresql.util.PSQLException",
+  "rootCauseMessage": "ERROR: syntax error at or near \"WHER\"\n  Position: 87",
+  "stackTrace": "org.springframework.jdbc.BadSqlGrammarException: PreparedStatementCallback; bad SQL grammar [SELECT u.id, u.name FROM users u WHER u.active = ?]\n\tat org.springframework.jdbc.support.SQLStateSQLExceptionTranslator.doTranslate(SQLStateSQLExceptionTranslator.java:137)\n\tat com.example.repository.UserRepository.findActiveUsers(UserRepository.java:28)\n\tat com.example.service.ReportService.generateUserReport(ReportService.java:44)\nCaused by: org.postgresql.util.PSQLException: ERROR: syntax error at or near \"WHER\"\n\tat org.postgresql.core.v3.QueryExecutorImpl.receiveErrorResponse(QueryExecutorImpl.java:2553)",
+  "recentLogs": "2024-01-15 09:00:01 INFO  [scheduler-1] c.e.ReportService - Starting daily user report generation\n2024-01-15 09:00:01 DEBUG [scheduler-1] c.e.UserRepository - Executing query: SELECT u.id, u.name FROM users u WHER u.active = true\n2024-01-15 09:00:01 ERROR [scheduler-1] c.e.ReportService - Report generation failed",
+  "springVersion": "3.2.0",
+  "javaVersion": "21",
+  "activeProfiles": "default",
+  "packaging": "jar",
+  "deploymentEnvironment": "local",
+  "database": "jdbc",
+  "webStack": "spring-mvc",
+  "buildTool": "maven",
+  "expectedCategory": "Code",
+  "expectedRank1Keywords": ["sql", "syntax", "query", "typo", "grammar"]
+}

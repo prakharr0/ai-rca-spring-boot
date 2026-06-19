@@ -34,5 +34,6 @@ public record RootCause(
         String category,
         String reasoning,
         String diagnosticStep,
-        String estimatedTimeToVerify
+        String estimatedTimeToVerify,
+        String proposedFix
 ) {}

@@ -1,0 +1,19 @@
+{
+  "id": "missing_datasource",
+  "description": "UnsatisfiedDependencyException at startup — DataSource bean not configured in test profile",
+  "exceptionType": "org.springframework.beans.factory.UnsatisfiedDependencyException",
+  "rootCauseType": "org.springframework.beans.factory.NoSuchBeanDefinitionException",
+  "rootCauseMessage": "No qualifying bean of type 'javax.sql.DataSource' available: expected at least 1 bean which qualifies as autowire candidate.",
+  "stackTrace": "org.springframework.beans.factory.UnsatisfiedDependencyException: Error creating bean with name 'userRepository': Unsatisfied dependency expressed through field 'dataSource'\n\tat org.springframework.beans.factory.annotation.AutowiredAnnotationBeanPostProcessor.resolveFieldValue(AutowiredAnnotationBeanPostProcessor.java:659)\n\tat com.example.repository.UserRepository.<init>(UserRepository.java:19)\nCaused by: org.springframework.beans.factory.NoSuchBeanDefinitionException: No qualifying bean of type 'javax.sql.DataSource' available\n\tat org.springframework.beans.factory.support.DefaultListableBeanFactory.raiseNoMatchingBeanFound(DefaultListableBeanFactory.java:1799)",
+  "recentLogs": "2024-01-15 08:00:00 INFO  [main] o.s.b.SpringApplication - Starting application\n2024-01-15 08:00:01 INFO  [main] o.s.b.SpringApplication - Active profiles: test\n2024-01-15 08:00:02 ERROR [main] o.s.b.SpringApplication - Application run failed\n2024-01-15 08:00:02 WARN  [main] o.s.b.d.LoggingFailureAnalysisReporter - Consider defining a bean of type 'javax.sql.DataSource' in your configuration",
+  "springVersion": "3.2.0",
+  "javaVersion": "21",
+  "activeProfiles": "test",
+  "packaging": "jar",
+  "deploymentEnvironment": "local",
+  "database": "jdbc",
+  "webStack": "spring-mvc",
+  "buildTool": "maven",
+  "expectedCategory": "Configuration",
+  "expectedRank1Keywords": ["datasource", "configuration", "missing", "bean", "profile"]
+}

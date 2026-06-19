@@ -35,7 +35,6 @@ import static org.junit.jupiter.api.Assertions.assertNotNull;
 @Disabled
 @Slf4j
 @SpringBootTest
-@ActiveProfiles("test")
 public class TemperatureEvalTest {
 
     private static final int REPS = 10;
@@ -84,7 +83,13 @@ public class TemperatureEvalTest {
             assertNotNull(chatResponse);
             assertNotNull(chatResponse.getResult());
 
-            final String content = chatResponse.getResult().getOutput().getText();
+            String content = chatResponse.getResult().getOutput().getText();
+            if (content != null) {
+                content = content.trim()
+                        .replaceAll("^```json\\s*", "")
+                        .replaceAll("^```\\s*", "")
+                        .replaceAll("\\s*```$", "");
+            }
             final AiRcaResponse res = new ObjectMapper()
                     .readValue(content, AiRcaResponse.class);
             responses.add(res);
@@ -96,6 +101,10 @@ public class TemperatureEvalTest {
         assertThat(responses).hasSize(REPS);
         assertThat(responses).allMatch(r -> r.rootCauses() != null && !r.rootCauses().isEmpty());
         assertThat(responses).allMatch(r -> r.analysisConfidence() >= 0.0 && r.analysisConfidence() <= 1.0);
+        assertThat(responses).allMatch(r -> r.knownPattern() != null && !r.knownPattern().isBlank());
+        // lowConfidence is set by the library after a threshold check — never by the model.
+        // Direct deserialization (no threshold configured here) must always produce false.
+        assertThat(responses).allMatch(r -> !r.isLowConfidence());
     }
 
     private void logEvalSummary(double temperature, List<AiRcaResponse> responses) {
@@ -123,13 +132,26 @@ public class TemperatureEvalTest {
                         r -> r.rootCauses().getFirst().category(),
                         Collectors.counting()));
 
+        // knownPattern distribution — should be stable across runs at low temperature
+        Map<String, Long> knownPatterns = responses.stream()
+                .collect(Collectors.groupingBy(AiRcaResponse::knownPattern, Collectors.counting()));
+
+        // missingInformation — how often does the model say data is missing?
+        long runsWithMissingInfo = responses.stream()
+                .filter(r -> r.missingInformation() != null && !r.missingInformation().isEmpty())
+                .count();
+
         log.info("=== Temperature {} | {} reps ===", temperature, REPS);
         log.info("  confidence  avg={}  min={}  max={}  stdDev={}", avgConfidence, minConfidence, maxConfidence, String.format("%.4f", stdDev));
         log.info("  rank-1 title uniqueness: {}/{} (lower = more consistent)", uniqueRank1Titles, REPS);
         log.info("  rank-3 likelihood violations (expected Low): {}/{}", rank3LikelihoodViolations, REPS);
         log.info("  rank-1 category distribution: {}", rank1Categories);
-        responses.forEach(r -> log.info("  [{}] confidence={}  rank1={}  rank3likelihood={}",
+        log.info("  knownPattern distribution: {}", knownPatterns);
+        log.info("  runs with missingInformation: {}/{}", runsWithMissingInfo, REPS);
+        responses.forEach(r -> log.info("  [{}] confidence={}  rank1={}  rank3likelihood={}  pattern='{}'  missing={}",
                 responses.indexOf(r), r.analysisConfidence(),
-                r.rootCauses().getFirst().title(), r.rootCauses().get(2).likelihood()));
+                r.rootCauses().getFirst().title(), r.rootCauses().get(2).likelihood(),
+                r.knownPattern(),
+                r.missingInformation() != null ? r.missingInformation().size() : 0));
     }
 }

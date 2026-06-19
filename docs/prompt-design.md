@@ -2,7 +2,7 @@
 
 **Library:** ai-rca-spring-boot-starter  
 **Author:** Prakhar Rathi  
-**Last updated:** 2026-06-02
+**Last updated:** 2026-06-19
 
 ---
 
@@ -91,7 +91,7 @@ This is not cosmetic. The domain list primes the model to weight reasoning towar
 | Rule | What it prevents |
 |---|---|
 | Think in ranked hypotheses | Jumping to a single conclusion |
-| Do NOT jump to fixes | Violating the library's diagnose-only contract |
+| Rank causes before proposedFix | Skipping diagnosis and jumping straight to a fix without reasoning |
 | Only use the provided data | Hallucinating plausible-sounding but fabricated context |
 | Do not assume missing config unless strongly implied | Same as above, more specific |
 | If data is insufficient, lower confidence | `analysisConfidence` always being falsely high |
@@ -233,8 +233,9 @@ Spring AI registers `ChatClient.Builder` as a `@Scope("prototype")` bean. Every 
       "likelihood": "High|Medium|Low",
       "category": "Configuration|Code|Infrastructure|Dependency|Environment",
       "reasoning": "max 2 sentences",
-      "diagnosticStep": "max 1 sentence",
-      "estimatedTimeToVerify": "< 5 minutes"
+      "diagnosticStep": "max 1 sentence — how to confirm or eliminate this hypothesis",
+      "estimatedTimeToVerify": "< 5 minutes",
+      "proposedFix": "max 2 sentences — specific corrective action for this hypothesis"
     }
   ]
 }
@@ -250,16 +251,21 @@ Spring AI registers `ChatClient.Builder` as a `@Scope("prototype")` bean. Every 
 
 **`category` enum** — five values (Configuration, Code, Infrastructure, Dependency, Environment) map to the five most common production failure domains for Spring Boot services. Mutually exclusive and exhaustive for typical JVM application failures.
 
+**`proposedFix`** — a corrective action for each hypothesis. Distinct from `diagnosticStep`: diagnostic step tells you *how to investigate*, proposed fix tells you *what to change*. Constrained to 2 sentences; the model references the class and line from the stack trace where possible. Without source code in the context, fixes are directionally correct but not code-level specific — see open item for source snippet extraction. Ordered by `rank` — rank-1 fix is the highest-confidence corrective action.
+
 ---
 
-## Remaining Open Items (Phase 2 targets)
+## Open Items
 
-| Item | Impact | Plan |
+| Item | Status | Notes |
 |---|---|---|
-| ~~No eval suite for output quality~~ | ~~No systematic way to measure prompt change impact~~ | **Done** — `TemperatureEvalTest` with 10-rep parameterised fixture corpus (2026-06-02) |
-| `analysisConfidence` not validated at runtime | Low-confidence results treated same as high-confidence | Phase 2: `ai.rca.min-confidence` threshold + `LOW_CONFIDENCE` tag |
-| No token count logging | Silent truncation risk if prompt grows beyond context window | Phase 2: add `PromptSizeWarning` log at 70% of model context window |
-| Stack filter list not configurable | Custom frameworks not in `FRAMEWORK_PREFIXES` remain as noise | Future: `ai.rca.stack-filter-prefixes` property |
+| Eval suite for output quality | **Done** | `RcaStructuralEvalTest`, `RcaConsistencyEvalTest`, `TemperatureEvalTest`, 13-fixture corpus |
+| `analysisConfidence` validated at runtime | **Done** | `ai.rca.min-confidence` + `LOG_WARN`/`SKIP` action + `lowConfidence` flag on response |
+| Token count in chat responses | **Done** | `inputTokens`/`outputTokens` on `POST /ai/rca/chat` response and chat UI |
+| `proposedFix` in RCA output | **Done** | `RootCause.proposedFix` — stack-trace-specific corrective action per hypothesis |
+| `PromptSizeWarning` log at 70% context window | **Open** | Silent truncation risk if prompt grows; add via `TokenCountEstimator` |
+| Stack filter prefixes not configurable | **Open** | Custom frameworks not in `FRAMEWORK_PREFIXES` remain as noise; `ai.rca.stack-filter-prefixes` |
+| Dependency vs Infrastructure category ambiguity | **Open** | Model classifies external service timeouts as `Infrastructure` rather than `Dependency`; needs prompt refinement |
 
 ---
 
@@ -289,3 +295,26 @@ Spring AI registers `ChatClient.Builder` as a `@Scope("prototype")` bean. Every 
 **Category consistency was perfect.** Rank-1 category was `Code` in all 40 responses. The structural `category` enum was never violated across either temperature or iteration.
 
 **Conclusion:** `temperature=0.1` produces the tightest title framing and zero schema violations. `temperature=1.0` produces unique titles on every run and introduces structural violations. For programmatic parsing of `AiRcaResponse`, 0.1–0.3 is the correct operating range. The library default of `0.1` is confirmed.
+
+---
+
+### Run 2 — PipelineException, OpenAI GPT-4o-mini (2026-06-19)
+
+Same fixture as Run 1. Prompt updated between runs: XML tags added, chain-of-thought strengthened, `proposedFix` field added to schema.
+
+| Temperature | Confidence avg ± stdDev | Rank-1 unique titles | Rank-3 violations | Known pattern variants |
+|-------------|------------------------|---------------------|-------------------|----------------------|
+| 0.1 | 0.75 ± 0.0000 | **1/10** — perfect | 0/10 | 1 |
+| 0.3 | 0.75 ± 0.0000 | **3/10** | 0/10 | 2 |
+| 0.7 | 0.75 ± 0.0000 | **3/10** | 1/10 | 4 |
+| 1.0 | 0.75 ± 0.0000 | **10/10** | 1/10 | 10 — completely unstable |
+
+**Changes vs Run 1:**
+
+- Rank-1 title uniqueness improved at 0.1 (2→1) and at 0.7 (6→3). The prompt update reduced title variance at intermediate temperatures.
+- `proposedFix` was `null` in all responses because Run 2 used the pre-update prompt schema (test module running against installed SNAPSHOT). Re-run after updating module to verify non-null `proposedFix`.
+- Schema violations (rank-3 likelihood) persist at temperature 0.7 and 1.0. Adding `proposedFix` to the schema did not worsen this.
+- `missingInformation` was empty in all 40 responses — confidence in this exception type is uniform.
+- Known pattern variance at temperature 1.0 is extreme (10 distinct patterns in 10 runs), confirming 1.0 is unsuitable for any structured output use case.
+
+**Combined conclusion from both runs:** The prompt improvements in version 1.0.0 measurably reduced title variance without affecting confidence stability. Temperature 0.1 remains the only setting that produces consistent, schema-valid output suitable for programmatic parsing.

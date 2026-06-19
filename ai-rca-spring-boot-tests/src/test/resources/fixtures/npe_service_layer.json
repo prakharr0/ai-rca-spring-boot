@@ -1,0 +1,19 @@
+{
+  "id": "npe_service_layer",
+  "description": "NPE in service layer — userId not validated before method call",
+  "exceptionType": "java.lang.NullPointerException",
+  "rootCauseType": "java.lang.NullPointerException",
+  "rootCauseMessage": "Cannot invoke \"String.length()\" because \"userId\" is null",
+  "stackTrace": "java.lang.NullPointerException: Cannot invoke \"String.length()\" because \"userId\" is null\n\tat com.example.service.UserService.findById(UserService.java:42)\n\tat com.example.controller.UserController.getUser(UserController.java:27)\n\tat sun.reflect.NativeMethodAccessorImpl.invoke0(Native Method)\n\tat org.springframework.web.servlet.FrameworkServlet.service(FrameworkServlet.java:899)\n\tat javax.servlet.http.HttpServlet.service(HttpServlet.java:764)",
+  "recentLogs": "2024-01-15 14:32:00 INFO  [http-nio-8080-exec-3] c.e.UserController - Received GET /users/null\n2024-01-15 14:32:00 DEBUG [http-nio-8080-exec-3] c.e.UserService - findById invoked, userId=null\n2024-01-15 14:32:00 ERROR [http-nio-8080-exec-3] c.e.GlobalExceptionHandler - Unhandled exception in request processing",
+  "springVersion": "3.2.0",
+  "javaVersion": "21",
+  "activeProfiles": "default",
+  "packaging": "jar",
+  "deploymentEnvironment": "local",
+  "database": "jdbc",
+  "webStack": "spring-mvc",
+  "buildTool": "maven",
+  "expectedCategory": "Code",
+  "expectedRank1Keywords": ["null", "userid", "validation", "parameter", "check"]
+}

@@ -75,8 +75,9 @@ public class UserPromptBuilder {
                   "likelihood": "<High|Medium|Low>",
                   "category": "<Configuration|Code|Infrastructure|Dependency|Environment>",
                   "reasoning": "<max 2 sentences>",
-                  "diagnosticStep": "<max 1 sentence>",
-                  "estimatedTimeToVerify": "<e.g. < 5 minutes>"
+                  "diagnosticStep": "<max 1 sentence — how to confirm or eliminate this hypothesis>",
+                  "estimatedTimeToVerify": "<e.g. < 5 minutes>",
+                  "proposedFix": "<max 2 sentences — specific corrective action for this hypothesis, not generic advice>"
                 }
               ]
             }
@@ -170,9 +171,8 @@ If no, classify it as a general failure pattern (e.g. "Arithmetic error in busin
 Never leave this field null.
 
 IMPORTANT:
-Do NOT suggest fixes.
-Do NOT give code changes.
-Focus only on ranked root causes and diagnostics.
+Focus on ranked root causes and diagnostics.
+For each root cause, include a proposedFix — never leave it null.
 </INSTRUCTIONS>
 
 <OUTPUT_FORMAT>
