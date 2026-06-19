@@ -16,7 +16,7 @@
 
 #### Token Usage in Chat Responses
 - `POST /ai/rca/chat` response now includes `inputTokens` and `outputTokens` fields.
-- Chat UI displays a running session tresoken total in the topbar (appears after the first response, resets on "Clear chat").
+- Chat UI displays a running session token total in the topbar (appears after the first response, resets on "Clear chat").
 
 #### LLM Eval Suite
 - New module `ai-rca-spring-boot-tests` contains three `@Disabled` eval test classes (run manually with a live API key):

@@ -367,6 +367,60 @@ Every analysis result has this structure:
 
 ---
 
+## How Output Quality Is Measured
+
+The library ships with an eval suite in the `ai-rca-spring-boot-tests` module. All eval tests are `@Disabled` — they require a live API key and are run manually, not in CI.
+
+### Three levels of evaluation
+
+**Level 1 — Structural (`RcaStructuralEvalTest`):**
+Runs each of the 13 fixture scenarios once and asserts the response is schema-valid: JSON parses, all required fields present, `likelihood` and `category` values within the allowed set, `rank` values sequential from 1, `analysisConfidence` between 0.0 and 1.0. Run this before and after any prompt change to confirm the JSON contract is intact.
+
+**Level 2 — Consistency (`RcaConsistencyEvalTest`):**
+Runs each fixture 5 times at production temperature (0.1) and asserts:
+- Rank-1 category is unanimous across all runs (no category flip)
+- Rank-1 title varies by at most 2 distinct values (rephrasing allowed, concept flip is not)
+- Confidence standard deviation stays below 0.15
+
+Run this before and after prompt changes to confirm hypothesis stability.
+
+**Level 3 — Temperature (`TemperatureEvalTest`):**
+Runs a single serialised exception 10 times each at temperatures 0.1, 0.3, 0.7, and 1.0. Measures confidence variance, rank-1 title uniqueness, rank-3 likelihood violations, and known pattern distribution. Use this to calibrate the `ai.rca.temperature` setting.
+
+### Running evals
+
+```bash
+# From ai-rca-spring-boot-tests/ — requires OPENAI_KEY or ANTHROPIC_KEY set
+mvn test -Dtest=RcaStructuralEvalTest
+mvn test -Dtest=RcaConsistencyEvalTest
+mvn test -Dtest=TemperatureEvalTest
+```
+
+Or run any test class from your IDE (right-click → Run).
+
+### Confidence threshold quality gate
+
+Set `ai.rca.min-confidence` to reject or tag results below a quality bar:
+
+```yaml
+ai:
+  rca:
+    min-confidence: 0.7             # flag results below 70% confidence
+    low-confidence-action: LOG_WARN # LOG_WARN (tag with lowConfidence=true) | SKIP (discard)
+```
+
+When confidence falls below the threshold, `AiRcaResponse.isLowConfidence()` returns `true`. Use this to filter results downstream without parsing the raw score.
+
+### Baseline eval results
+
+The first baseline run (2026-06-19, GPT-4o-mini, temperature 0.1) is documented in [`docs/eval-results/2026-06-19-v1.0.0.md`](docs/eval-results/2026-06-19-v1.0.0.md). Key findings:
+
+- Structural: 13/13 fixtures passed
+- Consistency: 11/13 passed; 2 known issues documented (minor wording variance and one category-ambiguous fixture)
+- Temperature: output is fully stable at 0.1; degrades sharply above 0.7
+
+---
+
 ## Design Principles
 
 - **Ranked hypotheses first, fixes second** — each root cause includes a `proposedFix` ordered by confidence (rank 1 = most likely to fix the issue). Fixes are specific to the stack trace, never generic advice.
