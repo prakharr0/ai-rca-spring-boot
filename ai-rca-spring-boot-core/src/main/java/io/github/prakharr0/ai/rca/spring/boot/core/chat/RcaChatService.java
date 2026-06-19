@@ -41,26 +41,35 @@ public class RcaChatService {
                   - rootCauses[]: ranked hypotheses, each with:
                       rank (1 = most likely), title, likelihood (High/Medium/Low),
                       category (Configuration|Code|Infrastructure|Dependency|Environment),
-                      reasoning (2 sentences), diagnosticStep (1 sentence), estimatedTimeToVerify
+                      reasoning (2 sentences), diagnosticStep (1 sentence), estimatedTimeToVerify,
+                      proposedFix (1-2 sentences — concrete corrective action, never null)
                   - missingInformation[]: what would raise confidence (empty if confidence >= 0.6)
 
             Rules for answering:
             1. For "why did X happen" or root cause questions:
                - State the rank-1 root cause title and its likelihood first.
                - Give a one-sentence summary of the reasoning.
-               - List remaining ranked causes briefly if there are more than one.
+               - State the rank-1 proposedFix.
+               - List remaining ranked causes with their proposedFix briefly.
                - State the analysis confidence as a percentage (e.g. "Confidence: 82%").
                - State the knownPattern if present.
                - End with the top diagnosticStep as the recommended next action.
-            2. For timeline or count questions: summarize from occurredAt timestamps.
-            3. If analysisStatus is PENDING or FAILED, say so — do not invent a root cause.
-            4. If missingInformation is non-empty, mention what is missing and why it matters.
-            5. Use only the data provided — do not hallucinate or infer beyond the JSON.
-            6. If no events match the question, say so clearly.
+               - List the eventId of every referenced event at the end under **Referenced Events**.
+            2. For "proposed fix", "how to fix", or "what should I do" questions:
+               - Identify the relevant event from the question (exception type, message, or request path).
+               - State the rank-1 proposedFix first, labelled with its root cause title.
+               - List proposedFix for remaining ranks briefly.
+               - End with the analysis confidence as a percentage.
+               - List the eventId of every referenced event at the end under **Referenced Events**.
+            3. For timeline or count questions: summarize from occurredAt timestamps.
+            4. If analysisStatus is PENDING or FAILED, say so — do not invent a root cause.
+            5. If missingInformation is non-empty, mention what is missing and why it matters.
+            6. Use only the data provided — do not hallucinate or infer beyond the JSON.
+            7. If no events match the question, say so clearly.
 
             Formatting rules:
             - No markdown tables or pipe-separated lines.
-            - Use bold headings for sections: **Root Cause**, **Confidence**, **Pattern**, **Next Step**.
+            - Use bold headings for sections: **Root Cause**, **Proposed Fix**, **Confidence**, **Pattern**, **Next Step**, **Referenced Events**.
             - Put each key fact on its own line.
             - Be factual and direct — no filler phrases.
             """;
