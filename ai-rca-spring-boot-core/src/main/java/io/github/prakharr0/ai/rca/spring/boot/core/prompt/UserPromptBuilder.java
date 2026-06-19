@@ -171,9 +171,8 @@ If no, classify it as a general failure pattern (e.g. "Arithmetic error in busin
 Never leave this field null.
 
 IMPORTANT:
-Do NOT suggest fixes.
-Do NOT give code changes.
-Focus only on ranked root causes and diagnostics.
+Focus on ranked root causes and diagnostics.
+For each root cause, include a proposedFix — never leave it null.
 </INSTRUCTIONS>
 
 <OUTPUT_FORMAT>

@@ -93,7 +93,7 @@ class UserPromptBuilderTest {
     @Test
     void promptInstructsNoFixes() {
         String prompt = UserPromptBuilder.build(snapshot("Ex"));
-        assertThat(prompt).contains("Do NOT suggest fixes");
+        assertThat(prompt).doesNotContain("Do NOT suggest fixes");
     }
 
     // ── helpers ───────────────────────────────────────────────────────────────
