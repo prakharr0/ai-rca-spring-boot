@@ -251,7 +251,7 @@ Spring AI registers `ChatClient.Builder` as a `@Scope("prototype")` bean. Every 
 
 **`category` enum** — five values (Configuration, Code, Infrastructure, Dependency, Environment) map to the five most common production failure domains for Spring Boot services. Mutually exclusive and exhaustive for typical JVM application failures.
 
-**`proposedFix`** — added in v0.1.0. A specific, stack-trace-grounded corrective action for each hypothesis. Distinct from `diagnosticStep`: diagnostic step tells you *how to investigate*, proposed fix tells you *what to change*. Constrained to 2 sentences and must be specific to the observed stack trace, not generic advice ("add null check" without referencing the actual class and line is rejected by the prompt). Ordered by `rank` — rank-1 fix is the highest-confidence corrective action.
+**`proposedFix`** — added in v1.0.0. A specific, stack-trace-grounded corrective action for each hypothesis. Distinct from `diagnosticStep`: diagnostic step tells you *how to investigate*, proposed fix tells you *what to change*. Constrained to 2 sentences and must be specific to the observed stack trace, not generic advice ("add null check" without referencing the actual class and line is rejected by the prompt). Ordered by `rank` — rank-1 fix is the highest-confidence corrective action.
 
 ---
 
