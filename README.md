@@ -1,305 +1,396 @@
-# 🔍 AI RCA Spring Boot Starter
+# AI RCA Spring Boot Starter
 
-> AI-powered Root Cause Analysis (RCA) for Spring Boot applications.
-
-Automatically analyzes exceptions using AI and returns structured, ranked root cause hypotheses.
+AI-powered Root Cause Analysis (RCA) for Spring Boot applications. Automatically intercepts exceptions, calls an LLM, and returns structured ranked hypotheses — with no code changes required beyond adding the dependency.
 
 ---
 
-## ✨ Features
+## Features
 
-- Automatic exception interception
-- Structured AI-based root cause analysis
-- Ranked hypotheses with likelihood levels
-- Diagnostic isolation steps
-- Spring Boot auto-configuration
-- Actuator endpoint integration
-- Exception timeline with timestamps
-- Time-based RCA querying
-- Chat endpoint for RCA Q&A
+- Automatic exception interception via `@ControllerAdvice`
+- Structured AI-based root cause analysis (ranked hypotheses, likelihood, diagnostic steps)
+- In-memory exception timeline with time-based querying
+- Conversational chat interface for incident Q&A
 - Built-in lightweight chat UI
-- Zero required Java configuration
+- Actuator endpoint for cached analysis results
+- Fingerprint-based deduplication (same exception pattern → one AI call)
+- Confidence threshold quality gate (`ai.rca.min-confidence`)
+- Spring Boot auto-configuration — zero Java config required
 
 ---
 
-## 📦 Modules
+## Modules
+
 ```
 ai-rca-spring-boot/
- ├── ai-rca-spring-boot-core
- └── ai-rca-spring-boot-starter
+ ├── ai-rca-spring-boot-core      # Context collection, prompt building, AI analyzer, models
+ ├── ai-rca-spring-boot-starter   # Auto-configuration, exception handler, web endpoints
+ └── ai-rca-spring-boot-tests     # Eval test suite and integration test app
 ```
 
 ### `ai-rca-spring-boot-core`
-- Context collection
-- Prompt building
-- AI analyzer implementation
-- RCA result models
+Context collection, prompt engineering, AI analyzer, RCA response models.
 
 ### `ai-rca-spring-boot-starter`
-- Auto-configuration
-- Global exception handler
-- Actuator endpoint
-- Bean wiring
+Spring Boot auto-configuration, global exception handler, REST endpoints, actuator integration.
+
+### `ai-rca-spring-boot-tests`
+A standalone Spring Boot app used for testing the library end-to-end. Contains:
+
+- **`TemperatureEvalTest`** — runs the same exception 10 times at temperatures 0.1, 0.3, 0.7, and 1.0. Measures confidence variance, rank-1 title uniqueness, rank-3 likelihood stability, and known pattern distribution. Use this before changing temperature settings.
+- **`RcaStructuralEvalTest`** — runs all 13 fixture scenarios through the model once each and asserts the JSON schema is valid: required fields present, enums within allowed values, ranks sequential.
+- **`RcaConsistencyEvalTest`** — runs each fixture 5 times at production temperature and asserts rank-1 category never flips and confidence std dev stays below 0.15.
+- **`RcaConfidenceThresholdTest`** — unit test (no API calls) verifying the `LOG_WARN` and `SKIP` confidence gate behaviors.
+
+All eval tests are `@Disabled` by default — they require a live API key and are run manually. Run them from your IDE or with:
+
+```bash
+# From ai-rca-spring-boot-tests/
+OPENAI_KEY=sk-... mvn test -Dtest=RcaStructuralEvalTest
+```
+
+The 13 fixture JSON files in `src/test/resources/fixtures/` cover all 5 root cause categories and serve as the ground truth corpus for eval runs.
 
 ---
 
-## 🚀 Installation
-
-### Maven
-```xml
-<dependency>
-  <groupId>io.github.prakharr0</groupId>
-  <artifactId>ai-rca-spring-boot-starter</artifactId>
-  <version>0.0.6</version>
-</dependency>
-
-<!-- AI Model Dependency-->
-<dependency>
-  <groupId>org.springframework.ai</groupId>
-  <artifactId>spring-ai-starter-model-openai</artifactId>
-</dependency>
-
-<!-- OR -->
-
-<dependency>
-  <groupId>org.springframework.ai</groupId>
-  <artifactId>spring-ai-starter-model-anthropic</artifactId>
-</dependency>
-```
-
-### Gradle
-```groovy
-implementation 'io.github.prakharr0:ai-rca-spring-boot-starter:0.0.6'
-```
-
----
-
-## ⚙️ Configuration
-
-### 1️⃣ OpenAI API Key
-```yaml
-spring:
-  ai:
-    openai:
-      api-key: ${OPENAI_KEY}
-      chat:
-        options:
-          model: ${OPENAI_MODEL}
-          temperature: ${AI_TEMP}
-```
-### OR
-
-### 1️⃣ Claude API Key
-```yaml
-spring:
-   anthropic:
-      api-key: ${ANTHROPIC_KEY}
-      chat:
-         options:
-            model: ${CLAUDE_MODEL} # >=claude-sonnet-4-6 RECOMMENDED
-            temperature: ${AI_TEMP}
-            max-tokens: ${CLAUDE_MAX_TOKENS} # >=8192 RECOMMENDED
-```
-
-### 2️⃣ Enable RCA
-```yaml
-ai:
-  rca:
-    enabled: true
-    history-size: 500
-    chat-enabled: true
-    chat-ui-enabled: true
-    default-time-tolerance-seconds: 1800
-    chat-context-events: 20
-```
-
-### 3️⃣ Expose Actuator Endpoint
-```yaml
-management:
-  endpoints:
-    web:
-      exposure:
-        include:
-          - health
-          - info
-          - rca
-```
-
-Access:
-```
-http://localhost:8080/actuator/rca
-```
-
-### 4️⃣ Query Exception Timeline
-
-Get recent or ranged exception events:
-```
-GET /ai/rca/events?limit=50
-GET /ai/rca/events?from=2026-02-05T14:00:00&to=2026-02-05T16:00:00
-```
-
-Find nearest event to a specific time:
-```
-GET /ai/rca/events/at?time=3 PM on 05 Feb 2026&toleranceSeconds=1800
-```
-
-### 5️⃣ RCA Chat API
-
-Ask questions about timeline + AI RCA results:
-```http
-POST /ai/rca/chat
-Content-Type: application/json
-
-{
-  "question": "An exception occurred at 3 pm on 05 feb 2026. Why did it happen?"
-}
-```
-
-Open lightweight UI:
-```
-GET /ai/rca/chat/ui
-```
-
----
-
-## 🧠 Example Output
-```json
-{
-   "b9d20b91e14037020f64324e776988aa20ae7d096e4dd02caa32e2b967a9b688": {
-      "analysisConfidence": 0.95,
-      "knownPattern": "Arithmetic error in business logic",
-      "exceptionMessage": "/ by zero",
-      "missingInformation": [],
-      "rootCauses": [
-         {
-            "rank": 1,
-            "title": "Hardcoded or unguarded division by zero in controller method",
-            "likelihood": "High",
-            "category": "Code",
-            "reasoning": "The stack trace pinpoints the exception directly at ExceptionThrowingController.java:11 inside throwEx(), indicating an integer division operation with a zero divisor at that exact line. No intermediate service or repository layer is involved, confirming the fault is isolated to controller logic.",
-            "diagnosticStep": "Inspect line 11 of ExceptionThrowingController.java to identify the division expression and trace the source of the zero-valued denominator.",
-            "estimatedTimeToVerify": "< 2 minutes"
-         },
-         {
-            "rank": 2,
-            "title": "Zero-valued input parameter passed to division operation",
-            "likelihood": "Medium",
-            "category": "Code",
-            "reasoning": "The controller method throwEx() may accept a request parameter used as a divisor without null or zero validation, allowing a caller to trigger the exception by passing zero. This is consistent with the exception originating at the controller entry point with no upstream processing.",
-            "diagnosticStep": "Check the method signature of throwEx() for request parameters and verify whether zero-value input validation is absent.",
-            "estimatedTimeToVerify": "< 5 minutes"
-         },
-         {
-            "rank": 3,
-            "title": "Intentional exception-throwing endpoint for testing error handling",
-            "likelihood": "Low",
-            "category": "Code",
-            "reasoning": "The controller is named ExceptionThrowingController, strongly suggesting it may be a test or demo endpoint deliberately coded to throw an ArithmeticException. If intentional, this is not a production defect but a test artifact deployed to a non-test environment.",
-            "diagnosticStep": "Review the class-level intent and any @RequestMapping annotations on ExceptionThrowingController to determine if it is a deliberate fault-injection endpoint.",
-            "estimatedTimeToVerify": "< 2 minutes"
-         }
-      ]
-   }
-}
-```
-
----
-
-## 🔍 How It Works
-
-When an exception occurs:
-
-1. Global exception handler intercepts error
-2. Context snapshot is collected:
-    - Exception type
-    - Root cause
-    - Trimmed stack trace
-    - Recent logs 
-    - Java version
-    - Spring Boot version
-    - Active profiles
-    - Deployment metadata
-3. Structured AI prompt is generated
-4. AI returns ranked hypotheses
-5. Result is cached and attached to matching timeline events
-6. Timeline + chat endpoints allow RCA exploration by time and questions
-
----
-
-## 📝 Log Context Capture
-
-File `src/main/resources/logback.xml`:
-```xml
-<configuration>
-    <appender name="RING_BUFFER"
-              class="context.io.github.prakharr0.ai.rca.spring.boot.core.RingBufferLogAppender" />
-    <root level="INFO">
-        <appender-ref ref="RING_BUFFER"/>
-    </root>
-</configuration>
-```
----
-
-## 🛡 Design Principles
-
-- No code suggestions
-- No automatic fixes
-- Only ranked hypotheses
-- Deterministic JSON output
-- Production-safe design
-
----
-
----
-
-## 🏗 Requirements
+## Requirements
 
 | Dependency  | Version |
 |-------------|---------|
 | Java        | 21+     |
 | Spring Boot | 3+      |
-| Spring AI   | 2+      |
+| Spring AI   | 1.0+    |
 
 ---
 
-## 🔨 Build From Source
-```bash
-mvn clean install
+## Installation
+
+### Maven
+
+```xml
+<dependency>
+  <groupId>io.github.prakharr0</groupId>
+  <artifactId>ai-rca-spring-boot-starter</artifactId>
+  <version>0.0.7</version>
+</dependency>
+```
+
+Add **one** of the following Spring AI model starters:
+
+```xml
+<!-- Anthropic Claude (recommended) -->
+<dependency>
+  <groupId>org.springframework.ai</groupId>
+  <artifactId>spring-ai-starter-model-anthropic</artifactId>
+</dependency>
+
+<!-- OR OpenAI -->
+<dependency>
+  <groupId>org.springframework.ai</groupId>
+  <artifactId>spring-ai-starter-model-openai</artifactId>
+</dependency>
+```
+
+Include the Spring AI BOM to manage versions:
+
+```xml
+<dependencyManagement>
+  <dependencies>
+    <dependency>
+      <groupId>org.springframework.ai</groupId>
+      <artifactId>spring-ai-bom</artifactId>
+      <version>1.0.0</version>
+      <type>pom</type>
+      <scope>import</scope>
+    </dependency>
+  </dependencies>
+</dependencyManagement>
+```
+
+### Gradle
+
+```groovy
+implementation 'io.github.prakharr0:ai-rca-spring-boot-starter:0.0.7'
+implementation 'org.springframework.ai:spring-ai-starter-model-anthropic'
 ```
 
 ---
 
-## 🧩 Usage in Another Project
+## Configuration
 
-1. Add dependency
-2. Add Spring AI dependency for OpenAI/Anthropic
-3. Configure API key
-4. Enable endpoint
-5. Run application
-6. Trigger exception
-7. Visit `/actuator/rca`, `/ai/rca/events`, or `/ai/rca/chat/ui`
+### Step 1 — Set your API key
 
-No additional Java configuration required.
+Set the key as an environment variable. Never hardcode it.
+
+**Anthropic:**
+
+```bash
+export ANTHROPIC_API_KEY=sk-ant-...
+```
+
+```yaml
+# application.yml
+spring:
+  ai:
+    anthropic:
+      api-key: ${ANTHROPIC_API_KEY}
+      chat:
+        options:
+          model: claude-sonnet-4-6      # claude-sonnet-4-6 or newer recommended
+          max-tokens: 8192               # minimum 4096; RCA responses avg 500-800 tokens
+```
+
+**OpenAI:**
+
+```bash
+export OPENAI_API_KEY=sk-...
+```
+
+```yaml
+# application.yml
+spring:
+  ai:
+    openai:
+      api-key: ${OPENAI_API_KEY}
+      chat:
+        options:
+          model: gpt-4o
+```
+
+> **Temperature note:** The library defaults to `temperature=0.1` for deterministic JSON output. At `temperature > 0.5`, structured output schema violations occur in ~10–15% of calls. You can override this with `ai.rca.temperature`.
 
 ---
 
+### Step 2 — Enable RCA (optional — enabled by default)
+
+```yaml
+ai:
+  rca:
+    enabled: true                          # master switch (default: true)
+    history-size: 500                      # max exception events in memory (default: 500)
+    chat-enabled: true                     # enables POST /ai/rca/chat (default: true)
+    chat-ui-enabled: true                  # enables GET /ai/rca/chat/ui (default: true)
+    default-time-tolerance-seconds: 1800   # tolerance for /events/at queries (default: 1800)
+    chat-context-events: 20                # recent events fed to chat LLM (default: 20)
+
+    # Model tuning (optional — library applies safe defaults when not set)
+    temperature: 0.1                       # overrides provider temp for RCA calls only
+    max-tokens: 8192                       # overrides provider max-tokens for RCA calls only
+
+    # Quality gate (optional)
+    min-confidence: 0.0                    # below this score, low-confidence action fires (0.0 = disabled)
+    low-confidence-action: LOG_WARN        # LOG_WARN (tag result) | SKIP (discard result)
+```
+
 ---
 
-## 🤝 Contributing
+### Step 3 — Expose the Actuator endpoint
 
-Pull requests are welcome.  
-Please open an issue first to discuss major changes.
+```yaml
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health, info, rca
+```
 
 ---
 
-## 📜 License
+### Step 4 — Configure log capture (optional but recommended)
 
-MIT License
+Add `RingBufferLogAppender` to Logback so recent log lines are included in AI prompts:
 
-Copyright (c) 2026 Prakhar Rathi
+```xml
+<!-- src/main/resources/logback-spring.xml -->
+<configuration>
+  <include resource="org/springframework/boot/logging/logback/defaults.xml"/>
+  <include resource="org/springframework/boot/logging/logback/console-appender.xml"/>
 
-Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated documentation files (the "Software"), to deal in the Software without restriction, including without limitation the rights to use, copy, modify, merge, publish, distribute, sublicense, and/or sell copies of the Software, and to permit persons to whom the Software is furnished to do so, subject to the following conditions:
+  <appender name="RING_BUFFER"
+            class="io.github.prakharr0.ai.rca.spring.boot.core.context.RingBufferLogAppender"/>
 
-The above copyright notice and this permission notice shall be included in all copies or substantial portions of the Software.
+  <root level="INFO">
+    <appender-ref ref="CONSOLE"/>
+    <appender-ref ref="RING_BUFFER"/>
+  </root>
+</configuration>
+```
 
-THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
+Without this, the AI prompt will have no log context. The buffer retains the last 50 log lines.
+
+---
+
+## Endpoints
+
+All endpoints are registered automatically by the auto-configuration.
+
+### `GET /actuator/rca`
+
+Returns all cached AI analysis results, keyed by exception fingerprint (SHA-256 of exception type + root cause + stack trace). Requires actuator exposure (Step 3 above).
+
+```
+GET http://localhost:8080/actuator/rca
+```
+
+---
+
+### `GET /ai/rca/events`
+
+Returns the exception event timeline, most recent first.
+
+| Parameter | Type   | Default | Description                            |
+|-----------|--------|---------|----------------------------------------|
+| `from`    | String | —       | Start time (ISO-8601, epoch ms, or natural language) |
+| `to`      | String | —       | End time (same formats)               |
+| `limit`   | int    | `50`    | Maximum events to return              |
+
+```
+GET /ai/rca/events
+GET /ai/rca/events?limit=20
+GET /ai/rca/events?from=2026-05-14T10:00:00Z&to=2026-05-14T18:00:00Z
+GET /ai/rca/events?from=14 May 2026&limit=10
+```
+
+**Supported time formats:**
+- ISO-8601: `2026-05-14T14:30:00Z`
+- ISO local: `2026-05-14T14:30:00`
+- ISO date: `2026-05-14`
+- Natural language: `3 PM on 14 May 2026`, `3:30 pm on 14 may 2026`
+- Epoch seconds (10 digits) or epoch millis (13 digits)
+
+---
+
+### `GET /ai/rca/events/at`
+
+Finds the exception event nearest to a given timestamp.
+
+| Parameter          | Type   | Default | Description                               |
+|--------------------|--------|---------|-------------------------------------------|
+| `time`             | String | —       | Target time (required, any supported format) |
+| `toleranceSeconds` | int    | `1800`  | Search window around the target time. Minimum 60. |
+
+```
+GET /ai/rca/events/at?time=2026-05-14T15:00:00Z
+GET /ai/rca/events/at?time=3 PM on 14 May 2026&toleranceSeconds=300
+```
+
+Returns `{ requestedTime, toleranceSeconds, event }`. `event` is `null` if nothing falls within the tolerance window.
+
+---
+
+### `POST /ai/rca/chat`
+
+Ask a natural language question about past exceptions and their AI analysis. The service resolves time references in the question, retrieves matching events, and sends them as grounded context to the LLM.
+
+```http
+POST /ai/rca/chat
+Content-Type: application/json
+
+{
+  "question": "Why did the exception at 3pm today happen?",
+  "toleranceSeconds": 1800
+}
+```
+
+**Response:**
+```json
+{
+  "answer": "...",
+  "referencedEventIds": ["uuid-1", "uuid-2"],
+  "resolvedTime": "2026-05-14T15:00:00Z",
+  "inputTokens": 1420,
+  "outputTokens": 312
+}
+```
+
+`toleranceSeconds` is optional (defaults to `ai.rca.default-time-tolerance-seconds`).
+
+---
+
+### `GET /ai/rca/chat/ui`
+
+Opens a lightweight browser chat UI. Dark theme, sidebar with example queries, adjustable time tolerance.
+
+```
+GET http://localhost:8080/ai/rca/chat/ui
+```
+
+Disable with `ai.rca.chat-ui-enabled: false`.
+
+---
+
+## AI Response Schema
+
+Every analysis result has this structure:
+
+```json
+{
+  "analysisConfidence": 0.92,
+  "knownPattern": "Arithmetic error in business logic",
+  "exceptionMessage": "/ by zero",
+  "missingInformation": [],
+  "lowConfidence": false,
+  "rootCauses": [
+    {
+      "rank": 1,
+      "title": "Unguarded division by zero in pricing calculation",
+      "likelihood": "High",
+      "category": "Code",
+      "reasoning": "Stack trace points to PricingService.java:58 inside applyBulkDiscount(). The divisor variable reaches zero when totalQuantity is 0, with no guard preceding the operation.",
+      "diagnosticStep": "Add a log statement at PricingService.java:55 to print totalQuantity before the division, then reproduce the issue with an empty cart.",
+      "estimatedTimeToVerify": "< 5 minutes",
+      "proposedFix": "Add a guard before the division: if (totalQuantity == 0) return 0; or throw an IllegalArgumentException. Validate totalQuantity is positive at the start of applyBulkDiscount."
+    },
+    {
+      "rank": 2,
+      "title": "Zero-quantity cart not validated before reaching service layer",
+      "likelihood": "Medium",
+      "category": "Code",
+      "reasoning": "The controller does not validate that cart quantity is non-zero before calling the pricing service, allowing invalid state to propagate downstream.",
+      "diagnosticStep": "Check CartController for pre-service input validation on quantity fields.",
+      "estimatedTimeToVerify": "< 10 minutes",
+      "proposedFix": "Add a @Min(1) constraint on the quantity field in the cart request DTO and enable @Valid on the controller method parameter to reject zero-quantity carts at the HTTP boundary."
+    }
+  ],
+  "metadata": {
+    "inputTokens": 1240,
+    "outputTokens": 487,
+    "totalTokens": 1727
+  }
+}
+```
+
+**`category` values:** `Code` · `Configuration` · `Infrastructure` · `Dependency` · `Environment`
+
+**`likelihood` values:** `High` · `Medium` · `Low`
+
+**`lowConfidence: true`** is set by the library (not the AI) when `analysisConfidence` falls below `ai.rca.min-confidence`. Use it to filter results programmatically.
+
+---
+
+## Design Principles
+
+- **Ranked hypotheses first, fixes second** — each root cause includes a `proposedFix` ordered by confidence (rank 1 = most likely to fix the issue). Fixes are specific to the stack trace, never generic advice.
+- **Analysis never blocks requests** — runs asynchronously after the exception is rethrown
+- **Fingerprint deduplication** — identical exception patterns reuse the cached AI result
+- **Graceful degradation** — AI failures are logged; the original exception behavior is always preserved
+- **Every bean is `@ConditionalOnMissingBean`** — any component can be replaced with your own
+
+---
+
+## Build From Source
+
+```bash
+mvn clean install -DskipTests
+```
+
+---
+
+## Contributing
+
+Pull requests are welcome. Open an issue first to discuss major changes.
+
+---
+
+## License
+
+MIT License — Copyright (c) 2026 Prakhar Rathi

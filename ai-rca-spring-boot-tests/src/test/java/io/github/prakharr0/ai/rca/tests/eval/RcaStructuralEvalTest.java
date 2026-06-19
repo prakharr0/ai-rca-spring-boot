@@ -47,7 +47,6 @@ import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 @Disabled("Requires live API key — run manually: right-click test class → Run")
 @Slf4j
 @SpringBootTest
-@ActiveProfiles("test")
 class RcaStructuralEvalTest {
 
     private static final double EVAL_TEMPERATURE = 0.1;

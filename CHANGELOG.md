@@ -1,5 +1,48 @@
 # Changelog
 
+## [0.1.0] - 2026-06-19
+
+### Features
+
+#### Confidence Threshold Quality Gate
+- New config property `ai.rca.min-confidence` (default: `0.0`, disabled). When set, analysis results whose `analysisConfidence` falls below the threshold trigger `ai.rca.low-confidence-action`.
+- New config property `ai.rca.low-confidence-action`: `LOG_WARN` (default — store result and tag it) or `SKIP` (discard result, mark event as failed).
+- `AiRcaResponse` now includes a `lowConfidence` boolean field set by the library after the threshold check. Use it to filter low-quality results programmatically without reading the raw score.
+- `isLowConfidence()` helper on `AiRcaResponse` provides a null-safe accessor (null → false, for results not yet threshold-checked).
+
+#### Improved Chat System Prompt
+- `RcaChatService` system prompt rewritten to explicitly instruct the model on the `ExceptionOccurrence` JSON structure: how to read `rootCauses[]`, `analysisConfidence`, `knownPattern`, `missingInformation`, and `analysisStatus`.
+- Chat responses now lead with rank-1 root cause and confidence percentage, surface `diagnosticStep` as the recommended next action, and correctly handle `PENDING`/`FAILED` analysis states.
+
+#### Token Usage in Chat Responses
+- `POST /ai/rca/chat` response now includes `inputTokens` and `outputTokens` fields.
+- Chat UI displays a running session tresoken total in the topbar (appears after the first response, resets on "Clear chat").
+
+#### LLM Eval Suite
+- New module `ai-rca-spring-boot-tests` contains three `@Disabled` eval test classes (run manually with a live API key):
+  - `RcaStructuralEvalTest` — schema validation across 13 exception fixture scenarios (JSON must parse, all fields valid, ranks sequential).
+  - `RcaConsistencyEvalTest` — rank-1 stability across 5 runs per fixture at production temperature; category-flip assertion.
+  - `RcaConfidenceThresholdTest` — unit test (no AI calls) verifying `LOG_WARN` tags results and `SKIP` discards them.
+- 13 fixture JSON files in `src/test/resources/fixtures/` covering all 5 root cause categories: Code, Configuration, Infrastructure, Dependency, Environment.
+
+#### Unit Test Coverage
+- 99 unit tests across core and starter modules (zero AI calls, all run in CI without API keys).
+- Classes covered: `ExceptionFingerprint`, `LogBuffer`, `ContextCollector`, `ExceptionOccurrence`, `ExceptionTimelineStore`, `AiRcaResponse`, `UserPromptBuilder`, `RcaTimeParser`, `AiRcaProperties`, `GlobalExceptionHandler`, `AiRcaEventsController`.
+
+#### Proposed Fixes in RCA Output
+- `RootCause` now includes a `proposedFix` field: a specific, stack-trace-grounded corrective action for each hypothesis, ordered by rank (rank 1 = highest confidence fix).
+- Distinct from `diagnosticStep` (which tells you how to *investigate*) — `proposedFix` tells you what to *change*.
+- System prompt updated with `proposedFix` examples and a 2-sentence constraint. Output schema updated accordingly.
+
+### Bug Fixes
+- `LogBuffer.append(null)` previously threw `NullPointerException` (ArrayDeque does not accept null). Now silently ignores null lines, matching the documented contract.
+
+### Breaking Changes
+- `AiRcaResponse` record gains a `lowConfidence` field (`Boolean`, nullable). Existing Jackson deserialization is unaffected — absent field defaults to `null` which `isLowConfidence()` treats as `false`.
+- `DefaultAiRcaAnalyzer` constructor gains two new parameters (`double minConfidence`, `LowConfidenceAction lowConfidenceAction`). Users overriding the bean via `@ConditionalOnMissingBean` must update their constructor call.
+
+---
+
 ## [0.0.6] - 2026-05-14
 
 ### Features

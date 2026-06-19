@@ -47,7 +47,6 @@ import static org.assertj.core.api.Assertions.assertThat;
 @Disabled("Requires live API key — 65 API calls per run. Run manually before/after prompt changes.")
 @Slf4j
 @SpringBootTest
-@ActiveProfiles("test")
 class RcaConsistencyEvalTest {
 
     private static final int REPS = 5;
@@ -152,7 +151,9 @@ class RcaConsistencyEvalTest {
 
         log.info("=== Consistency: {} | {} reps | temp={} ===", fixtureId, REPS, EVAL_TEMPERATURE);
         log.info("  expected category: {}", fixture.expectedCategory());
-        log.info("  confidence avg={:.3f} min={:.3f} max={:.3f} stdDev={:.4f}", avg, min, max, stdDev);
+        log.info("  confidence avg={} min={} max={} stdDev={}",
+                String.format("%.3f", avg), String.format("%.3f", min),
+                String.format("%.3f", max), String.format("%.4f", stdDev));
         log.info("  rank-1 title uniqueness: {}/{} (1 = perfectly stable)", uniqueTitles, REPS);
         log.info("  rank-1 category distribution: {}", categoryDist);
 

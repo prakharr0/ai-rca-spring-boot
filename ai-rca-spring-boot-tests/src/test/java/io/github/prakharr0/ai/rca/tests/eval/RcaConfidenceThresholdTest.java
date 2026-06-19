@@ -51,7 +51,7 @@ import static org.mockito.Mockito.*;
  * but without a Spring context the annotation is not proxied — the method runs synchronously
  * in these unit tests, which is exactly what we want.
  */
-@Disabled("Unit test — no API key needed, but @Disabled per eval convention. Run manually.")
+@Disabled
 @ExtendWith(MockitoExtension.class)
 class RcaConfidenceThresholdTest {
 
@@ -134,8 +134,8 @@ class RcaConfidenceThresholdTest {
 
         AiRcaResponse stored = captor.getValue();
         assertThat(stored.analysisConfidence()).isEqualTo(0.2);
-        assertThat(stored.lowConfidence())
-                .as("lowConfidence flag must be true when score 0.2 < threshold 0.7")
+        assertThat(stored.isLowConfidence())
+                .as("isLowConfidence() must be true when score 0.2 < threshold 0.7")
                 .isTrue();
 
         // markFailureByFingerprint must NOT be called — result was stored, not discarded
@@ -167,8 +167,8 @@ class RcaConfidenceThresholdTest {
 
         ArgumentCaptor<AiRcaResponse> captor = ArgumentCaptor.forClass(AiRcaResponse.class);
         verify(timelineStore).attachAnalysisByFingerprint(anyString(), captor.capture());
-        assertThat(captor.getValue().lowConfidence())
-                .as("lowConfidence must be false when threshold is disabled (0.0)")
+        assertThat(captor.getValue().isLowConfidence())
+                .as("isLowConfidence() must be false when threshold is disabled (0.0)")
                 .isFalse();
     }
 
@@ -183,8 +183,8 @@ class RcaConfidenceThresholdTest {
 
         ArgumentCaptor<AiRcaResponse> captor = ArgumentCaptor.forClass(AiRcaResponse.class);
         verify(timelineStore).attachAnalysisByFingerprint(anyString(), captor.capture());
-        assertThat(captor.getValue().lowConfidence())
-                .as("lowConfidence must be false when confidence 0.2 >= threshold 0.1")
+        assertThat(captor.getValue().isLowConfidence())
+                .as("isLowConfidence() must be false when confidence 0.2 >= threshold 0.1")
                 .isFalse();
     }
 

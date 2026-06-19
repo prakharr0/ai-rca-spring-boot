@@ -58,6 +58,7 @@ public class LogBuffer {
      * @param line the log line to append; may be {@code null}
      */
     public static synchronized void append(String line) {
+        if (line == null) return;
         if (buffer.size() >= MAX_LINES) {
             buffer.pollFirst();
         }

@@ -40,8 +40,17 @@ public record AiRcaResponse(
         List<String> missingInformation,
         List<RootCause> rootCauses,
         AnalysisMetadata metadata,
-        boolean lowConfidence
+        Boolean lowConfidence
 ) {
+
+    /**
+     * Returns {@code true} if this result was flagged as low-confidence by the library.
+     * Null-safe: {@code null} (present when deserialized directly from AI JSON, before any
+     * threshold check) is treated as {@code false}.
+     */
+    public boolean isLowConfidence() {
+        return Boolean.TRUE.equals(lowConfidence);
+    }
 
     public AiRcaResponse withMetadata(AnalysisMetadata metadata) {
         return new AiRcaResponse(analysisConfidence, knownPattern, exceptionMessage,
