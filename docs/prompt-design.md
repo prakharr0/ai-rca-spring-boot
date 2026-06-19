@@ -259,13 +259,13 @@ Spring AI registers `ChatClient.Builder` as a `@Scope("prototype")` bean. Every 
 
 | Item | Status | Notes |
 |---|---|---|
-| Eval suite for output quality | **Done (Phase 2)** | `RcaStructuralEvalTest`, `RcaConsistencyEvalTest`, `TemperatureEvalTest`, 13-fixture corpus |
-| `analysisConfidence` validated at runtime | **Done (Phase 2)** | `ai.rca.min-confidence` + `LOG_WARN`/`SKIP` action + `lowConfidence` flag on response |
-| Token count in chat responses | **Done (Phase 2)** | `inputTokens`/`outputTokens` on `POST /ai/rca/chat` response and chat UI |
-| `proposedFix` in RCA output | **Done (Phase 2)** | `RootCause.proposedFix` — stack-trace-specific corrective action per hypothesis |
-| `PromptSizeWarning` log at 70% context window | **Open (Phase 3)** | Silent truncation risk if prompt grows; add via `TokenCountEstimator` |
-| Stack filter prefixes not configurable | **Open (Future)** | Custom frameworks not in `FRAMEWORK_PREFIXES` remain as noise; `ai.rca.stack-filter-prefixes` |
-| Dependency vs Infrastructure category ambiguity | **Open (Future)** | Model classifies external service timeouts as `Infrastructure` rather than `Dependency`; needs prompt refinement |
+| Eval suite for output quality | **Done** | `RcaStructuralEvalTest`, `RcaConsistencyEvalTest`, `TemperatureEvalTest`, 13-fixture corpus |
+| `analysisConfidence` validated at runtime | **Done** | `ai.rca.min-confidence` + `LOG_WARN`/`SKIP` action + `lowConfidence` flag on response |
+| Token count in chat responses | **Done** | `inputTokens`/`outputTokens` on `POST /ai/rca/chat` response and chat UI |
+| `proposedFix` in RCA output | **Done** | `RootCause.proposedFix` — stack-trace-specific corrective action per hypothesis |
+| `PromptSizeWarning` log at 70% context window | **Open** | Silent truncation risk if prompt grows; add via `TokenCountEstimator` |
+| Stack filter prefixes not configurable | **Open** | Custom frameworks not in `FRAMEWORK_PREFIXES` remain as noise; `ai.rca.stack-filter-prefixes` |
+| Dependency vs Infrastructure category ambiguity | **Open** | Model classifies external service timeouts as `Infrastructure` rather than `Dependency`; needs prompt refinement |
 
 ---
 
@@ -317,4 +317,4 @@ Same fixture as Run 1. Prompt updated between runs: XML tags added, chain-of-tho
 - `missingInformation` was empty in all 40 responses — confidence in this exception type is uniform.
 - Known pattern variance at temperature 1.0 is extreme (10 distinct patterns in 10 runs), confirming 1.0 is unsuitable for any structured output use case.
 
-**Combined conclusion from both runs:** The prompt improvements in Phase 2 measurably reduced title variance without affecting confidence stability. Temperature 0.1 remains the only setting that produces consistent, schema-valid output suitable for programmatic parsing.
+**Combined conclusion from both runs:** The prompt improvements in version 1.0.0 measurably reduced title variance without affecting confidence stability. Temperature 0.1 remains the only setting that produces consistent, schema-valid output suitable for programmatic parsing.
