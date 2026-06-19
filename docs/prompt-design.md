@@ -317,4 +317,4 @@ Same fixture as Run 1. Prompt updated between runs: XML tags added, chain-of-tho
 - `missingInformation` was empty in all 40 responses — confidence in this exception type is uniform.
 - Known pattern variance at temperature 1.0 is extreme (10 distinct patterns in 10 runs), confirming 1.0 is unsuitable for any structured output use case.
 
-**Combined conclusion from both runs:** The prompt improvements in version 1.0.0 measurably reduced title variance without affecting confidence stability. Temperature 0.1 remains the only setting that produces consistent, schema-valid output suitable for programmatic parsing.
+**Combined conclusion from both runs:** The prompt improvements in version 1.0.1 measurably reduced title variance without affecting confidence stability. Temperature 0.1 remains the only setting that produces consistent, schema-valid output suitable for programmatic parsing.

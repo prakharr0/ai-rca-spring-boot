@@ -70,7 +70,7 @@ The 13 fixture JSON files in `src/test/resources/fixtures/` cover all 5 root cau
 <dependency>
   <groupId>io.github.prakharr0</groupId>
   <artifactId>ai-rca-spring-boot-starter</artifactId>
-  <version>0.0.7</version>
+  <version>1.0.1</version>
 </dependency>
 ```
 
@@ -98,7 +98,7 @@ Include the Spring AI BOM to manage versions:
     <dependency>
       <groupId>org.springframework.ai</groupId>
       <artifactId>spring-ai-bom</artifactId>
-      <version>1.0.0</version>
+      <version>1.0.1</version>
       <type>pom</type>
       <scope>import</scope>
     </dependency>
@@ -109,7 +109,7 @@ Include the Spring AI BOM to manage versions:
 ### Gradle
 
 ```groovy
-implementation 'io.github.prakharr0:ai-rca-spring-boot-starter:0.0.7'
+implementation 'io.github.prakharr0:ai-rca-spring-boot-starter:1.0.1'
 implementation 'org.springframework.ai:spring-ai-starter-model-anthropic'
 ```
 
@@ -413,7 +413,7 @@ When confidence falls below the threshold, `AiRcaResponse.isLowConfidence()` ret
 
 ### Baseline eval results
 
-The first baseline run (2026-06-19, GPT-4o-mini, temperature 0.1) is documented in [`docs/eval-results/2026-06-19-v1.0.0.md`](docs/eval-results/2026-06-19-v1.0.0.md). Key findings:
+The first baseline run (2026-06-19, GPT-4o-mini, temperature 0.1) is documented in [`docs/eval-results/2026-06-19-v1.0.1.md`](docs/eval-results/2026-06-19-v1.0.1.md). Key findings:
 
 - Structural: 13/13 fixtures passed
 - Consistency: 11/13 passed; 2 known issues documented (minor wording variance and one category-ambiguous fixture)

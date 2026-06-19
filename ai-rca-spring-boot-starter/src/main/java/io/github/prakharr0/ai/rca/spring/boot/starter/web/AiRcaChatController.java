@@ -353,7 +353,7 @@ public class AiRcaChatController {
                     </div>
                     <div class="sb-foot">
                       <div>ai-rca-spring-boot</div>
-                      <div style="color:var(--accent)">v0.0.6</div>
+                      <div style="color:var(--accent)">v1.0.1</div>
                       <div style="margin-top:5px;font-size:10px;line-height:1.8">
                         &#9166; Enter &mdash; send<br>
                         &#8679; Shift+Enter &mdash; new line
