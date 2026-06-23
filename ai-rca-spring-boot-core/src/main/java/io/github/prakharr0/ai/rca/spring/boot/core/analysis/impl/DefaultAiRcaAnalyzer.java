@@ -3,13 +3,16 @@ package io.github.prakharr0.ai.rca.spring.boot.core.analysis.impl;
 import io.github.prakharr0.ai.rca.spring.boot.core.analysis.LowConfidenceAction;
 import io.github.prakharr0.ai.rca.spring.boot.core.model.AnalysisMetadata;
 import io.github.prakharr0.ai.rca.spring.boot.core.model.AiRcaResponse;
+import io.github.prakharr0.ai.rca.spring.boot.core.rag.RunbookChunk;
+import io.github.prakharr0.ai.rca.spring.boot.core.rag.RunbookStore;
 import io.github.prakharr0.ai.rca.spring.boot.core.store.ExceptionTimelineStore;
-import lombok.RequiredArgsConstructor;
+import io.github.prakharr0.ai.rca.spring.boot.core.store.ExceptionTimelineStore.SimilarOccurrence;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.ai.chat.client.ChatClient;
 import org.springframework.ai.chat.model.ChatResponse;
 import org.springframework.ai.chat.metadata.Usage;
+import org.springframework.ai.embedding.EmbeddingModel;
 import org.springframework.scheduling.annotation.Async;
 import io.github.prakharr0.ai.rca.spring.boot.core.analysis.AiRcaAnalyzer;
 import io.github.prakharr0.ai.rca.spring.boot.core.context.ContextCollector;
@@ -19,118 +22,59 @@ import io.github.prakharr0.ai.rca.spring.boot.core.prompt.SystemPrompts;
 import io.github.prakharr0.ai.rca.spring.boot.core.prompt.UserPromptBuilder;
 import tools.jackson.databind.ObjectMapper;
 
+import java.time.Instant;
+import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 
-/**
- * Default implementation of {@link AiRcaAnalyzer} that performs AI-powered
- * Root Cause Analysis (RCA) for thrown exceptions in a Spring Boot application.
- *
- * <p>
- * This analyzer:
- * <ul>
- *     <li>Collects contextual information about a {@link Throwable} using {@link ContextCollector}</li>
- *     <li>Generates a deterministic fingerprint via {@link ExceptionFingerprint}</li>
- *     <li>Invokes a Spring AI {@link ChatClient} with system and user prompts</li>
- *     <li>Caches responses to avoid duplicate AI calls for identical exception fingerprints</li>
- *     <li>Logs the AI-generated analysis output</li>
- * </ul>
- *
- * <h2>Execution Model</h2>
- * The {@link #analyze(Throwable)} method is annotated with {@link org.springframework.scheduling.annotation.Async},
- * meaning analysis runs asynchronously and does not block the calling thread.
- *
- * <h2>Caching Strategy</h2>
- * <p>
- * A {@link ConcurrentHashMap} is used to cache AI responses keyed by an exception fingerprint.
- * If the same exception (based on contextual fingerprint) occurs again,
- * the cached result is reused instead of invoking the AI model.
- *
- * <h2>AI Interaction Flow</h2>
- * <ol>
- *     <li>Collect {@link ContextSnapshot}</li>
- *     <li>Generate fingerprint</li>
- *     <li>Build prompts using {@link SystemPrompts} and {@link UserPromptBuilder}</li>
- *     <li>Call the AI model via {@link ChatClient}</li>
- *     <li>Strip Markdown formatting from response</li>
- *     <li>Cache and log the result</li>
- * </ol>
- *
- * <h2>Thread Safety</h2>
- * The internal cache is thread-safe. The class itself is stateless except for
- * the cache and injected collaborators, making it safe for singleton Spring usage.
- *
- * <h2>Logging</h2>
- * Results are logged using SLF4J at WARN level with the prefix:
- * <pre>
- * [AI-RCA-SPRING-BOOT-STARTER]
- * </pre>
- *
- * @see AiRcaAnalyzer
- * @see ContextCollector
- * @see ContextSnapshot
- * @see ExceptionFingerprint
-
- */
-@RequiredArgsConstructor
 public class DefaultAiRcaAnalyzer implements AiRcaAnalyzer {
 
-    /**
-     * Logger for AI RCA analysis output and failure events.
-     */
     private static final Logger log = LoggerFactory.getLogger(DefaultAiRcaAnalyzer.class);
 
-    /**
-     * Spring AI client used to communicate with the configured LLM.
-     */
     private final ChatClient chatClient;
     private final ContextCollector collector;
     private final ObjectMapper objectMapper;
     private final ExceptionTimelineStore timelineStore;
-
-    /**
-     * Minimum confidence score to accept a result. 0.0 disables the threshold.
-     * Configured via {@code ai.rca.min-confidence}.
-     */
     private final double minConfidence;
-
-    /**
-     * What to do when confidence falls below {@link #minConfidence}.
-     * Configured via {@code ai.rca.low-confidence-action}.
-     */
     private final LowConfidenceAction lowConfidenceAction;
+    private final boolean ragEnabled;
+    private final int ragTopK;
+    private final double ragMinSimilarityScore;
 
-    /**
-     * In-memory cache storing AI responses keyed by exception fingerprint.
-     * <p>
-     * Key: Exception fingerprint
-     * Value: AI-generated RCA response (Markdown stripped)
-     */
+    /** Nullable — only present when an EmbeddingModel bean is configured. */
+    private final EmbeddingModel embeddingModel;
+
+    /** Nullable — only present when @RcaRunbook annotation is detected + EmbeddingModel exists. */
+    private final RunbookStore runbookStore;
+
     private final Map<String, AiRcaResponse> cache = new ConcurrentHashMap<>();
 
-    /**
-     * Performs asynchronous AI-based root cause analysis for a given {@link Throwable}.
-     *
-     * <p><b>Execution Steps:</b></p>
-     * <ol>
-     *     <li>Collect {@link ContextSnapshot} from the exception</li>
-     *     <li>Generate fingerprint using {@link ExceptionFingerprint}</li>
-     *     <li>Check cache for existing analysis</li>
-     *     <li>If not cached, build prompts and invoke AI model</li>
-     *     <li>Strip Markdown formatting from response</li>
-     *     <li>Store result in cache</li>
-     *     <li>Log AI analysis output</li>
-     * </ol>
-     *
-     * <p>
-     * If AI invocation fails or returns {@code null}, a warning is logged
-     * and no cache entry is stored.
-     *
-     * <p>
-     * This method is non-blocking and executes on a Spring async executor.
-     *
-     * @param throwable the exception to analyze; must not be {@code null}
-     */
+    public DefaultAiRcaAnalyzer(
+            ChatClient chatClient,
+            ContextCollector collector,
+            ObjectMapper objectMapper,
+            ExceptionTimelineStore timelineStore,
+            double minConfidence,
+            LowConfidenceAction lowConfidenceAction,
+            boolean ragEnabled,
+            int ragTopK,
+            double ragMinSimilarityScore,
+            EmbeddingModel embeddingModel,
+            RunbookStore runbookStore
+    ) {
+        this.chatClient = chatClient;
+        this.collector = collector;
+        this.objectMapper = objectMapper;
+        this.timelineStore = timelineStore;
+        this.minConfidence = minConfidence;
+        this.lowConfidenceAction = lowConfidenceAction;
+        this.ragEnabled = ragEnabled;
+        this.ragTopK = ragTopK;
+        this.ragMinSimilarityScore = ragMinSimilarityScore;
+        this.embeddingModel = embeddingModel;
+        this.runbookStore = runbookStore;
+    }
+
     @Async
     @Override
     public void analyze(Throwable throwable) {
@@ -141,9 +85,17 @@ public class DefaultAiRcaAnalyzer implements AiRcaAnalyzer {
         if (cache.containsKey(fingerprint)) {
             response = cache.get(fingerprint);
         } else {
+            float[] embedding = generateEmbedding(snapshot);
+            if (embedding != null) {
+                timelineStore.attachEmbeddingByFingerprint(fingerprint, embedding);
+            }
+            String similarIncidentsBlock = buildSimilarIncidentsBlock(embedding, fingerprint);
+            String runbookBlock = buildRunbookBlock(embedding);
+            String userPrompt = UserPromptBuilder.build(snapshot, similarIncidentsBlock, runbookBlock);
+
             ChatResponse chatResponse = chatClient.prompt()
                     .system(SystemPrompts.SYSTEM_PROMPT)
-                    .user(UserPromptBuilder.build(snapshot))
+                    .user(userPrompt)
                     .call()
                     .chatResponse();
 
@@ -186,28 +138,67 @@ public class DefaultAiRcaAnalyzer implements AiRcaAnalyzer {
                 objectMapper.writerWithDefaultPrettyPrinter().writeValueAsString(response));
     }
 
-    /**
-     * Returns all cached AI analysis results.
-     *
-     * <p>
-     * The returned map is the live internal cache. Modifying it will
-     * affect the analyzer state.
-     *
-     * @return a thread-safe map of exception fingerprint to AI response
-     */
     public Map<String, AiRcaResponse> getResults() {
         return cache;
     }
 
-    /**
-     * Extracts token usage from the provider's {@link ChatResponse} metadata.
-     *
-     * <p>Token counts are reported by the AI provider and reflect actual API usage for this call.
-     * Both values are nullable — providers may omit usage data on error responses.
-     *
-     * <p>If {@code outputTokens} is consistently near the configured {@code max_tokens} limit,
-     * the response is likely being truncated — lower temperature or reduce prompt size.
-     */
+    // ── RAG helpers ──────────────────────────────────────────────────────────
+
+    private float[] generateEmbedding(ContextSnapshot snapshot) {
+        if (!ragEnabled && (runbookStore == null || runbookStore.isEmpty())) return null;
+        if (embeddingModel == null) return null;
+        try {
+            String text = snapshot.rootCauseType() + ": " + snapshot.rootCauseMessage()
+                    + "\n" + snapshot.stackTrace();
+            return embeddingModel.embed(text);
+        } catch (Exception e) {
+            log.debug("[AI-RCA] Embedding generation failed: {}", e.getMessage());
+            return null;
+        }
+    }
+
+    private String buildSimilarIncidentsBlock(float[] embedding, String currentFingerprint) {
+        if (!ragEnabled || embedding == null) return null;
+        List<SimilarOccurrence> similar = timelineStore.findSimilar(
+                embedding, currentFingerprint, ragTopK, ragMinSimilarityScore);
+        if (similar.isEmpty()) return null;
+
+        StringBuilder sb = new StringBuilder();
+        for (SimilarOccurrence s : similar) {
+            var occ = s.occurrence();
+            sb.append("---\n")
+              .append("Similarity score: ").append("%.2f".formatted(s.score())).append("\n")
+              .append("Exception: ").append(occ.getExceptionType()).append("\n")
+              .append("Root cause: ").append(occ.getRootCauseType()).append("\n")
+              .append("Message: ").append(occ.getExceptionMessage()).append("\n")
+              .append("Occurred at: ").append(Instant.ofEpochMilli(occ.getOccurredAt().toEpochMilli())).append("\n");
+            if (occ.getAnalysis() != null && !occ.getAnalysis().rootCauses().isEmpty()) {
+                var top = occ.getAnalysis().rootCauses().getFirst();
+                sb.append("Previously diagnosed as: ").append(top.title()).append(" (").append(top.likelihood()).append(")\n");
+                if (top.proposedFix() != null) {
+                    sb.append("Fix applied: ").append(top.proposedFix()).append("\n");
+                }
+            }
+        }
+        return sb.toString();
+    }
+
+    private String buildRunbookBlock(float[] embedding) {
+        if (runbookStore == null || runbookStore.isEmpty() || embedding == null) return null;
+        List<RunbookChunk> chunks = runbookStore.findRelevant(embedding, 2, 0.3);
+        if (chunks.isEmpty()) return null;
+
+        StringBuilder sb = new StringBuilder();
+        for (RunbookChunk chunk : chunks) {
+            sb.append("--- Source: ").append(chunk.source());
+            if (!chunk.heading().isBlank()) sb.append(" / ").append(chunk.heading());
+            sb.append(" ---\n").append(chunk.content().strip()).append("\n\n");
+        }
+        return sb.toString();
+    }
+
+    // ── Metadata / formatting helpers ────────────────────────────────────────
+
     private AnalysisMetadata extractMetadata(ChatResponse chatResponse) {
         try {
             Usage usage = chatResponse.getMetadata().getUsage();
@@ -225,32 +216,13 @@ public class DefaultAiRcaAnalyzer implements AiRcaAnalyzer {
         }
     }
 
-    /**
-     * Removes Markdown code block formatting from AI responses.
-     *
-     * <p>
-     * Specifically removes:
-     * <ul>
-     *     <li>{@code ```json ... ```}</li>
-     *     <li>{@code ``` ... ```}</li>
-     * </ul>
-     *
-     * This ensures cleaner log output and easier structured parsing.
-     *
-     * @param content raw AI response content
-     * @return cleaned response without Markdown wrappers, or {@code null} if input is null
-     */
     private String stripMarkdown(String content) {
         if (content == null) return null;
-
         String stripped = content.trim();
-
-        // Remove ```json ... ``` or ``` ... ```
         if (stripped.startsWith("```")) {
             stripped = stripped.replaceAll("^```(?:json)?\\s*", "");
             stripped = stripped.replaceAll("\\s*```$", "");
         }
-
         return stripped.trim();
     }
 }

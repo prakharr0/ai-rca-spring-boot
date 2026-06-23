@@ -5,6 +5,7 @@ import org.slf4j.LoggerFactory;
 import org.springframework.ai.chat.client.ChatClient;
 import org.springframework.ai.chat.model.ChatModel;
 import org.springframework.ai.chat.prompt.ChatOptions;
+import org.springframework.ai.embedding.EmbeddingModel;
 import org.springframework.beans.factory.ObjectProvider;
 import org.springframework.boot.autoconfigure.AutoConfiguration;
 import org.springframework.boot.autoconfigure.condition.*;
@@ -15,6 +16,7 @@ import io.github.prakharr0.ai.rca.spring.boot.core.chat.RcaChatService;
 import io.github.prakharr0.ai.rca.spring.boot.core.analysis.AiRcaAnalyzer;
 import io.github.prakharr0.ai.rca.spring.boot.core.analysis.impl.DefaultAiRcaAnalyzer;
 import io.github.prakharr0.ai.rca.spring.boot.core.context.ContextCollector;
+import io.github.prakharr0.ai.rca.spring.boot.core.rag.RunbookStore;
 import io.github.prakharr0.ai.rca.spring.boot.core.store.ExceptionTimelineStore;
 import io.github.prakharr0.ai.rca.spring.boot.starter.exception.GlobalExceptionHandler;
 import io.github.prakharr0.ai.rca.spring.boot.starter.web.AiRcaChatController;
@@ -123,12 +125,32 @@ public class AiRcaAutoConfiguration {
             ContextCollector collector,
             ObjectMapper objectMapper,
             ExceptionTimelineStore timelineStore,
-            AiRcaProperties properties
+            AiRcaProperties properties,
+            ObjectProvider<EmbeddingModel> embeddingModelProvider,
+            ObjectProvider<RunbookStore> runbookStoreProvider
     ) {
         return new DefaultAiRcaAnalyzer(
                 rcaAnalyzerChatClient, collector, objectMapper, timelineStore,
-                properties.getMinConfidence(), properties.getLowConfidenceAction()
+                properties.getMinConfidence(), properties.getLowConfidenceAction(),
+                properties.getRag().isEnabled(),
+                properties.getRag().getTopK(),
+                properties.getRag().getMinSimilarityScore(),
+                embeddingModelProvider.getIfAvailable(),
+                runbookStoreProvider.getIfAvailable()
         );
+    }
+
+    /**
+     * Registers a {@link RunbookStore} when an {@link EmbeddingModel} is available.
+     *
+     * <p>The store self-initializes via {@link org.springframework.beans.factory.SmartInitializingSingleton}
+     * after all beans are ready — scanning the application context for {@code @RcaRunbook} annotations.
+     */
+    @Bean
+    @ConditionalOnMissingBean
+    @ConditionalOnBean(EmbeddingModel.class)
+    public RunbookStore runbookStore(EmbeddingModel embeddingModel) {
+        return new RunbookStore(embeddingModel);
     }
 
     /**

@@ -190,7 +190,8 @@ class RcaConfidenceThresholdTest {
 
     private DefaultAiRcaAnalyzer analyzerWith(double threshold, LowConfidenceAction action) {
         return new DefaultAiRcaAnalyzer(
-                chatClient, contextCollector, objectMapper, timelineStore, threshold, action
+                chatClient, contextCollector, objectMapper, timelineStore, threshold, action,
+                false, 3, threshold, null, null
         );
     }
 }

@@ -105,17 +105,29 @@ public class UserPromptBuilder {
      * @return a fully constructed AI prompt string
      */
     public static String build(ContextSnapshot c) {
+        return build(c, null, null);
+    }
+
+    /**
+     * Builds a prompt enriched with RAG context.
+     *
+     * @param c                  exception context snapshot
+     * @param similarIncidents   pre-formatted XML block for similar past incidents, or {@code null}
+     * @param runbookSections    pre-formatted XML block for relevant runbook sections, or {@code null}
+     */
+    public static String build(ContextSnapshot c, String similarIncidents, String runbookSections) {
+        String ragContext = buildRagContext(similarIncidents, runbookSections);
 
         return """
 <EXCEPTION_SUMMARY>
 
-Exception Type: 
+Exception Type:
 %s
 
-Root Cause Type: 
+Root Cause Type:
 %s
 
-Root Cause Message: 
+Root Cause Message:
 %s
 
 </EXCEPTION_SUMMARY>
@@ -128,7 +140,7 @@ Root Cause Message:
 <LOG_CONTEXT>
 %s
 </LOG_CONTEXT>
-      
+
 <APPLICATION_CONTEXT>
 Spring Boot Version: %s
 Java Version: %s
@@ -139,7 +151,7 @@ Database: %s
 Web Stack: %s
 Build Tool: %s
 </APPLICATION_CONTEXT>
-
+%s
 <INSTRUCTIONS>
 Perform structured root cause analysis of this Java production failure.
 Think step by step before assigning likelihood to each hypothesis.
@@ -164,7 +176,7 @@ PHASE 3:
 Provide:
     - Overall confidence score between 0.0 and 1.0
     - If confidence < 0.6, list missing information that would increase certainty.
-    
+
 Identify if the failure matches a known Spring Boot misconfiguration pattern.\s
 If yes, label it explicitly (e.g. "Missing DataSource configuration").
 If no, classify it as a general failure pattern (e.g. "Arithmetic error in business logic").
@@ -193,8 +205,24 @@ Output strictly valid JSON using the schema below.
                 c.database(),
                 c.webStack(),
                 c.buildTool(),
+                ragContext,
                 OUTPUT_SCHEMA
         );
+    }
+
+    private static String buildRagContext(String similarIncidents, String runbookSections) {
+        StringBuilder sb = new StringBuilder();
+        if (similarIncidents != null && !similarIncidents.isBlank()) {
+            sb.append("\n<SIMILAR_PAST_INCIDENTS>\n")
+              .append(similarIncidents.strip())
+              .append("\n</SIMILAR_PAST_INCIDENTS>\n");
+        }
+        if (runbookSections != null && !runbookSections.isBlank()) {
+            sb.append("\n<RELEVANT_RUNBOOK_SECTIONS>\n")
+              .append(runbookSections.strip())
+              .append("\n</RELEVANT_RUNBOOK_SECTIONS>\n");
+        }
+        return sb.toString();
     }
 
     /**

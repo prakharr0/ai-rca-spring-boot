@@ -1,6 +1,7 @@
 package io.github.prakharr0.ai.rca.spring.boot.core.store;
 
 import io.github.prakharr0.ai.rca.spring.boot.core.model.AiRcaResponse;
+import io.github.prakharr0.ai.rca.spring.boot.core.util.CosineSimilarity;
 
 import java.time.Duration;
 import java.time.Instant;
@@ -102,4 +103,56 @@ public class ExceptionTimelineStore {
             occurrence.markFailed(error);
         }
     }
+
+    public synchronized void attachEmbeddingByFingerprint(String fingerprint, float[] embedding) {
+        List<ExceptionOccurrence> matched = eventsByFingerprint.getOrDefault(fingerprint, List.of());
+        for (ExceptionOccurrence occurrence : matched) {
+            occurrence.setEmbedding(embedding);
+        }
+    }
+
+    /**
+     * Finds the top-N past occurrences most semantically similar to the given query embedding.
+     *
+     * <p>Deduplicates by fingerprint — only the occurrence with the highest similarity score
+     * per fingerprint group is considered. The fingerprint {@code excludeFingerprint} is skipped
+     * entirely (used to exclude the current exception from its own search results).
+     *
+     * <p>Only occurrences that have been embedded (non-null embedding) are eligible.
+     *
+     * @param queryEmbedding     the embedding of the new exception to find similar incidents for
+     * @param excludeFingerprint fingerprint of the current exception to exclude from results
+     * @param topN               maximum number of results to return
+     * @param minScore           minimum cosine similarity score to include a result
+     * @return list of similar past occurrences, sorted by similarity descending
+     */
+    public synchronized List<SimilarOccurrence> findSimilar(
+            float[] queryEmbedding, String excludeFingerprint, int topN, double minScore) {
+
+        if (queryEmbedding == null || events.isEmpty()) return List.of();
+
+        // Best score per fingerprint (dedup same exception type)
+        Map<String, SimilarOccurrence> bestPerFingerprint = new HashMap<>();
+
+        for (ExceptionOccurrence occurrence : events) {
+            String fp = occurrence.getFingerprint();
+            if (fp.equals(excludeFingerprint)) continue;
+            float[] embedding = occurrence.getEmbedding();
+            if (embedding == null) continue;
+
+            double score = CosineSimilarity.compute(queryEmbedding, embedding);
+            if (score < minScore) continue;
+
+            SimilarOccurrence candidate = new SimilarOccurrence(occurrence, score);
+            bestPerFingerprint.merge(fp, candidate,
+                    (existing, next) -> next.score() > existing.score() ? next : existing);
+        }
+
+        return bestPerFingerprint.values().stream()
+                .sorted(Comparator.comparingDouble(SimilarOccurrence::score).reversed())
+                .limit(Math.max(1, topN))
+                .toList();
+    }
+
+    public record SimilarOccurrence(ExceptionOccurrence occurrence, double score) {}
 }

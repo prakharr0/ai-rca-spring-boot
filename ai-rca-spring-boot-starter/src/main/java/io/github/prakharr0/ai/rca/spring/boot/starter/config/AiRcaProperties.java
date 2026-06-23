@@ -121,4 +121,40 @@ public class AiRcaProperties {
      * chosen as a safety ceiling against mid-JSON truncation on verbose outputs.
      */
     private Integer maxTokens = null;
+
+    /** RAG (Retrieval-Augmented Generation) settings for context injection into RCA prompts. */
+    private RagProperties rag = new RagProperties();
+
+    @Getter
+    @Setter
+    public static class RagProperties {
+
+        /**
+         * Enables RAG context injection via embeddings.
+         *
+         * <p>When enabled, each analyzed exception is embedded and stored. New exceptions
+         * are compared against stored embeddings using cosine similarity, and the top-K most
+         * similar past incidents are injected into the RCA prompt as additional context.
+         *
+         * <p>Also activates runbook chunk retrieval when {@code @RcaRunbook} is present.
+         *
+         * <p>Requires an {@code EmbeddingModel} bean (e.g. via
+         * {@code spring-ai-starter-model-openai}). Has no effect if no embedding model is available.
+         */
+        private boolean enabled = false;
+
+        /**
+         * Maximum number of similar past incidents to retrieve and inject into the RCA prompt.
+         * Standard RAG "top-K" parameter.
+         */
+        private int topK = 3;
+
+        /**
+         * Minimum cosine similarity score (0.0–1.0) a past incident must reach to be included.
+         * Incidents below this threshold are excluded even if they are the closest matches.
+         * Set to 0.0 to include any past incident regardless of similarity.
+         */
+        private double minSimilarityScore = 0.3;
+    }
 }
+

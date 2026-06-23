@@ -20,6 +20,7 @@ public class ExceptionOccurrence {
     private volatile AnalysisStatus analysisStatus;
     private volatile AiRcaResponse analysis;
     private volatile String analysisError;
+    private volatile float[] embedding;
 
     public ExceptionOccurrence(
             String eventId,
@@ -90,6 +91,14 @@ public class ExceptionOccurrence {
 
     public String getAnalysisError() {
         return analysisError;
+    }
+
+    public float[] getEmbedding() {
+        return embedding;
+    }
+
+    public void setEmbedding(float[] embedding) {
+        this.embedding = embedding;
     }
 
     public synchronized void attachAnalysis(AiRcaResponse response) {

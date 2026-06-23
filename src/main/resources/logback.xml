@@ -1,9 +1,9 @@
 <configuration>
 
-    <appender name="RING_BUFFER" class="context.io.github.prakharr0.ai.rca.spring.boot.core.RingBufferLogAppender" />
+    <appender name="AI_RCA_BUFFER" class="context.io.github.prakharr0.ai.rca.spring.boot.core.RingBufferLogAppender" />
 
     <root level="INFO">
-        <appender-ref ref="RING_BUFFER" />
+        <appender-ref ref="AI_RCA_BUFFER" />
     </root>
 
 </configuration>

@@ -7,10 +7,15 @@ spring:
       chat:
         options:
           model: gpt-4o-mini
+      embedding:
+        options:
+          model: text-embedding-3-small
 
 ai:
   rca:
     enabled: true
+    rag:
+      enabled: true
 
 logging:
   level:

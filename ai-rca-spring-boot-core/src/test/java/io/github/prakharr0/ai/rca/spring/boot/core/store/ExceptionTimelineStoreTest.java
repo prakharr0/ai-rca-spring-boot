@@ -162,6 +162,105 @@ class ExceptionTimelineStoreTest {
         assertThat(e.getAnalysisError()).isEqualTo("AI timed out");
     }
 
+    // ── attachEmbeddingByFingerprint ──────────────────────────────────────────
+
+    @Test
+    void attachEmbedding_setsEmbeddingOnAllMatchingOccurrences() {
+        store.add(occurrence("e1", Instant.now(), "fp-shared"));
+        store.add(occurrence("e2", Instant.now().plusSeconds(1), "fp-shared"));
+        store.add(occurrence("e3", Instant.now().plusSeconds(2), "fp-other"));
+
+        float[] vec = {1f, 0f, 0f};
+        store.attachEmbeddingByFingerprint("fp-shared", vec);
+
+        List<ExceptionOccurrence> all = store.latest(10);
+        assertThat(all.stream().filter(e -> e.getFingerprint().equals("fp-shared")))
+                .allMatch(e -> e.getEmbedding() == vec);
+        assertThat(all.stream().filter(e -> e.getFingerprint().equals("fp-other")))
+                .allMatch(e -> e.getEmbedding() == null);
+    }
+
+    @Test
+    void attachEmbedding_unknownFingerprint_doesNotThrow() {
+        store.attachEmbeddingByFingerprint("fp-unknown", new float[]{1f, 0f});
+    }
+
+    // ── findSimilar ───────────────────────────────────────────────────────────
+
+    @Test
+    void findSimilar_returnsEmpty_whenStoreIsEmpty() {
+        assertThat(store.findSimilar(new float[]{1f, 0f}, "fp-x", 3, 0.0)).isEmpty();
+    }
+
+    @Test
+    void findSimilar_returnsEmpty_whenNoOccurrencesHaveEmbeddings() {
+        store.add(occurrence("e1", Instant.now(), "fp-1"));
+        assertThat(store.findSimilar(new float[]{1f, 0f}, "fp-x", 3, 0.0)).isEmpty();
+    }
+
+    @Test
+    void findSimilar_excludesCurrentFingerprint() {
+        float[] vec = {1f, 0f};
+        store.add(occurrence("e1", Instant.now(), "fp-current"));
+        store.attachEmbeddingByFingerprint("fp-current", vec);
+
+        assertThat(store.findSimilar(vec, "fp-current", 3, 0.0)).isEmpty();
+    }
+
+    @Test
+    void findSimilar_ranksByScoreDescending() {
+        // fp-close is more similar to the query than fp-far
+        float[] query = {1f, 0f, 0f};
+        float[] close = {0.9f, 0.1f, 0f};
+        float[] far   = {0f,   0f,   1f};
+
+        store.add(occurrence("e1", Instant.now(), "fp-close"));
+        store.attachEmbeddingByFingerprint("fp-close", close);
+        store.add(occurrence("e2", Instant.now().plusSeconds(1), "fp-far"));
+        store.attachEmbeddingByFingerprint("fp-far", far);
+
+        var results = store.findSimilar(query, "fp-none", 3, 0.0);
+        assertThat(results).hasSize(2);
+        assertThat(results.get(0).occurrence().getFingerprint()).isEqualTo("fp-close");
+        assertThat(results.get(1).occurrence().getFingerprint()).isEqualTo("fp-far");
+    }
+
+    @Test
+    void findSimilar_deduplicatesByFingerprint_keepsBestScore() {
+        float[] query = {1f, 0f};
+        float[] vec   = {1f, 0f};
+
+        // Two occurrences of the same fingerprint — should appear only once in results
+        store.add(occurrence("e1", Instant.now(), "fp-shared"));
+        store.add(occurrence("e2", Instant.now().plusSeconds(1), "fp-shared"));
+        store.attachEmbeddingByFingerprint("fp-shared", vec);
+
+        var results = store.findSimilar(query, "fp-none", 10, 0.0);
+        assertThat(results).hasSize(1);
+    }
+
+    @Test
+    void findSimilar_respectsTopK() {
+        float[] query = {1f, 0f, 0f};
+        for (int i = 0; i < 5; i++) {
+            String fp = "fp-" + i;
+            store.add(occurrence("e" + i, Instant.now().plusSeconds(i), fp));
+            store.attachEmbeddingByFingerprint(fp, new float[]{1f, i * 0.1f, 0f});
+        }
+        assertThat(store.findSimilar(query, "fp-none", 2, 0.0)).hasSize(2);
+    }
+
+    @Test
+    void findSimilar_excludesBelowMinScore() {
+        float[] query      = {1f, 0f};
+        float[] orthogonal = {0f, 1f}; // cosine similarity = 0.0
+
+        store.add(occurrence("e1", Instant.now(), "fp-orth"));
+        store.attachEmbeddingByFingerprint("fp-orth", orthogonal);
+
+        assertThat(store.findSimilar(query, "fp-none", 3, 0.1)).isEmpty();
+    }
+
     // ── helper ───────────────────────────────────────────────────────────────
 
     private ExceptionOccurrence occurrence(String id, Instant at, String fingerprint) {

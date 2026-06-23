@@ -195,27 +195,87 @@ management:
 
 ---
 
-### Step 4 — Configure log capture (optional but recommended)
+### Step 4 — Configure log capture
 
-Add `RingBufferLogAppender` to Logback so recent log lines are included in AI prompts:
+**Required for log context in AI prompts.** Without this step, the `LOG_CONTEXT` section of every prompt is empty and the AI works with stack trace and metadata only.
+
+Add `RingBufferLogAppender` to Logback by creating (or updating) `src/main/resources/logback-spring.xml`:
 
 ```xml
-<!-- src/main/resources/logback-spring.xml -->
+<?xml version="1.0" encoding="UTF-8"?>
 <configuration>
   <include resource="org/springframework/boot/logging/logback/defaults.xml"/>
   <include resource="org/springframework/boot/logging/logback/console-appender.xml"/>
 
-  <appender name="RING_BUFFER"
+  <!-- Feeds recent log lines into AI-RCA prompts -->
+  <appender name="AI_RCA_BUFFER"
             class="io.github.prakharr0.ai.rca.spring.boot.core.context.RingBufferLogAppender"/>
 
   <root level="INFO">
     <appender-ref ref="CONSOLE"/>
-    <appender-ref ref="RING_BUFFER"/>
+    <appender-ref ref="AI_RCA_BUFFER"/>
   </root>
 </configuration>
 ```
 
-Without this, the AI prompt will have no log context. The buffer retains the last 50 log lines.
+The buffer retains the last 50 log lines preceding the exception. These lines appear in the prompt under `<LOG_CONTEXT>` and give the AI runtime signal (e.g. a DB connection warning logged 200ms before the NPE) that it cannot infer from the stack trace alone.
+
+---
+
+## RAG — Historical Similarity and Runbook Injection
+
+The library can enrich RCA prompts with two additional context sources using embeddings.
+
+### Historical similarity
+
+When enabled, each exception is embedded and stored. When a new exception fires, the top-K most similar past incidents are retrieved by cosine similarity and injected into the prompt under `<SIMILAR_PAST_INCIDENTS>`. This helps the model recognise recurring patterns and cross-reference previous diagnoses.
+
+**Requires** an `EmbeddingModel` bean — add the OpenAI starter and set an API key:
+
+```xml
+<dependency>
+  <groupId>org.springframework.ai</groupId>
+  <artifactId>spring-ai-starter-model-openai</artifactId>
+</dependency>
+```
+
+```yaml
+spring:
+  ai:
+    openai:
+      api-key: ${OPENAI_API_KEY}
+      # Optional — Spring AI has a default embedding model if omitted
+      embedding:
+        options:
+          model: text-embedding-3-small
+
+ai:
+  rca:
+    rag:
+      enabled: true               # default: false
+      top-k: 3                    # similar incidents to retrieve (default: 3)
+      min-similarity-score: 0.3   # cosine similarity threshold (default: 0.3)
+```
+
+The first few exceptions build the store. Similarity results appear once enough distinct exception types have been embedded.
+
+> **Using Anthropic for chat and OpenAI for embeddings?** Add both starters and disable OpenAI's chat model to avoid a duplicate `ChatModel` bean:
+> ```yaml
+> spring.ai.openai.chat.enabled: false
+> ```
+
+### Runbook injection
+
+Annotate your `@SpringBootApplication` class with `@RcaRunbook` to register runbooks or error playbooks. Content is loaded at startup, chunked by markdown heading, embedded, and stored. When an exception fires, the most relevant chunks are retrieved and injected into the prompt under `<RELEVANT_RUNBOOK_SECTIONS>`.
+
+```java
+@RcaRunbook(source = "classpath:runbooks/payments-errors.md")
+@RcaRunbook(source = "classpath:runbooks/database-errors.md")
+@SpringBootApplication
+public class PaymentsApplication { }
+```
+
+Supports Spring resource prefixes: `classpath:`, `file:`, `https://`, etc. Requires `ai.rca.rag.enabled: true` and an `EmbeddingModel` bean. Repeatable — add one `@RcaRunbook` per document.
 
 ---
 

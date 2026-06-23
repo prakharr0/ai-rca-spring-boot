@@ -96,6 +96,58 @@ class UserPromptBuilderTest {
         assertThat(prompt).doesNotContain("Do NOT suggest fixes");
     }
 
+    // ── RAG overload ──────────────────────────────────────────────────────────
+
+    @Test
+    void ragOverload_withNullBlocks_matchesSingleArgOverload() {
+        ContextSnapshot c = snapshot("java.lang.RuntimeException");
+        assertThat(UserPromptBuilder.build(c, null, null))
+                .isEqualTo(UserPromptBuilder.build(c));
+    }
+
+    @Test
+    void ragOverload_injectsSimilarIncidentsSection() {
+        String prompt = UserPromptBuilder.build(snapshot("Ex"), "incident data here", null);
+        assertThat(prompt).contains("<SIMILAR_PAST_INCIDENTS>");
+        assertThat(prompt).contains("incident data here");
+        assertThat(prompt).contains("</SIMILAR_PAST_INCIDENTS>");
+    }
+
+    @Test
+    void ragOverload_injectsRunbookSection() {
+        String prompt = UserPromptBuilder.build(snapshot("Ex"), null, "runbook content here");
+        assertThat(prompt).contains("<RELEVANT_RUNBOOK_SECTIONS>");
+        assertThat(prompt).contains("runbook content here");
+        assertThat(prompt).contains("</RELEVANT_RUNBOOK_SECTIONS>");
+    }
+
+    @Test
+    void ragOverload_injectsBothSections() {
+        String prompt = UserPromptBuilder.build(snapshot("Ex"), "incidents", "runbook");
+        assertThat(prompt).contains("<SIMILAR_PAST_INCIDENTS>");
+        assertThat(prompt).contains("<RELEVANT_RUNBOOK_SECTIONS>");
+    }
+
+    @Test
+    void ragOverload_ragSectionsAppearBeforeInstructions() {
+        String prompt = UserPromptBuilder.build(snapshot("Ex"), "incidents", "runbook");
+        int ragIndex         = prompt.indexOf("<SIMILAR_PAST_INCIDENTS>");
+        int instructionIndex = prompt.indexOf("<INSTRUCTIONS>");
+        assertThat(ragIndex).isLessThan(instructionIndex);
+    }
+
+    @Test
+    void ragOverload_blankSimilarIncidents_notInjected() {
+        String prompt = UserPromptBuilder.build(snapshot("Ex"), "   ", null);
+        assertThat(prompt).doesNotContain("<SIMILAR_PAST_INCIDENTS>");
+    }
+
+    @Test
+    void ragOverload_blankRunbook_notInjected() {
+        String prompt = UserPromptBuilder.build(snapshot("Ex"), null, "   ");
+        assertThat(prompt).doesNotContain("<RELEVANT_RUNBOOK_SECTIONS>");
+    }
+
     // ── helpers ───────────────────────────────────────────────────────────────
 
     private ContextSnapshot snapshot(String exceptionType) {

@@ -6,7 +6,7 @@
 
     <groupId>io.github.prakharr0</groupId>
     <artifactId>ai-rca-spring-boot</artifactId>
-    <version>1.0.1</version>
+    <version>1.0.2-SNAPSHOT</version>
     <packaging>pom</packaging>
 
     <modules>
